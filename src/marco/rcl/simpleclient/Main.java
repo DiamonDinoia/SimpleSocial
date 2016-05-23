@@ -1,4 +1,4 @@
-package simpleclient;
+package marco.rcl.simpleclient;
 
 public class Main {
 
