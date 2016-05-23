@@ -1,11 +1,9 @@
 package marco.rcl.shared;
 
 /**
- * Created by marko on 23/05/2016.
+ * This interface contains all the possible commands shared between client/server.
+ *
  */
-
-
-
 public interface Commands {
 
     public final int Register = 1;
