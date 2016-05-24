@@ -1,5 +1,8 @@
 package marco.rcl.simpleclient;
 
+import marco.rcl.shared.Token;
+
+import java.util.UUID;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class Client {

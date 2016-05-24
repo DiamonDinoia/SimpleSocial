@@ -1,12 +1,14 @@
 package marco.rcl.shared;
 
+import java.util.UUID;
+
 /**
  * This class is used to represent the user
  */
 public class User {
     private final String name;
     private final String password;
-    private long token;
+    private Token token;
 
     public User(String name, String password) {
         this.name = name;
@@ -21,11 +23,11 @@ public class User {
         return password;
     }
 
-    public long getToken() {
+    public Token getToken() {
         return token;
     }
 
-    public void setToken(long token) {
+    public void setToken(Token token) {
         this.token = token;
     }
 
