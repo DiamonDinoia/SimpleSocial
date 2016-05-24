@@ -15,8 +15,10 @@ public class Token {
     }
 
     @Override
-    public boolean equals(Object t){
-        Token token = (Token) t;
+    public boolean equals(Object obj){
+        if ((null == obj) || (obj.getClass() != Token.class))
+            return false;
+        Token token = (Token) obj;
         return token.id.equals(this.id);
     }
 }
