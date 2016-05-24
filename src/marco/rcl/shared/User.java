@@ -1,6 +1,5 @@
 package marco.rcl.shared;
 
-import java.util.UUID;
 
 /**
  * This class is used to represent the user
@@ -13,6 +12,7 @@ public class User {
     public User(String name, String password) {
         this.name = name;
         this.password = password;
+        this.token = new Token();
     }
 
     public String getName() {

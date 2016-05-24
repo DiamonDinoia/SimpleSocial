@@ -3,9 +3,9 @@ package marco.rcl.simpleserver;
 import marco.rcl.shared.ConnectionParam;
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.net.InetAddress;
 import java.net.ServerSocket;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -16,20 +16,19 @@ public class ConnectionManager {
     private int port = ConnectionParam.PORT;
     private InetAddress address = ConnectionParam.ADDRESS;
     private int backlog = 100;
-    private final Logger log = Logger.getLogger(this.getClass().getName());
+    Logger log = null;
 
     /**
      * Contsructor, initializes the socket
      */
-    public ConnectionManager() {
-        log.info("Logger Name: "+log.getName());
+    public ConnectionManager(Logger log) {
         try {
-            log.info("Creating Server Socket");
-            log.config(address.toString() + " " + Integer.toString(port));
-            serverSocket = new ServerSocket(port,backlog,address);
+            this.log = log;
+            serverSocket = new ServerSocket(port, backlog, address);
+            log.info("creating serverSocket");
+            log.severe("test");
         } catch (IOException e) {
-            log.log(Level.SEVERE,"Failed creation serverSocket\n" + e.toString(), e);
-            System.out.println("Failed creation serverSocket");
+            log.severe("Failed creation serverSocket " + e.toString());
             e.printStackTrace();
         }
     }

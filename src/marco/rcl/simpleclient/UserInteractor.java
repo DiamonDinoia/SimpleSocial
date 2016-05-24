@@ -12,13 +12,13 @@ public class UserInteractor implements Runnable {
 
     private LinkedBlockingQueue<String> queue = null;
 
-    UserInteractor(LinkedBlockingQueue<String> q){
+    UserInteractor(LinkedBlockingQueue<String> q) {
         queue = q;
     }
 
-    public void run(){
+    public void run() {
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-        while (true){
+        while (true) {
             try {
                 queue.put(reader.readLine());
             } catch (InterruptedException | IOException e) {

@@ -2,7 +2,6 @@ package marco.rcl.shared;
 
 /**
  * This interface contains all the possible commands shared between client/server.
- *
  */
 public interface Commands {
 

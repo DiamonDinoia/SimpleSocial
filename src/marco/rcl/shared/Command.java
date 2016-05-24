@@ -1,9 +1,10 @@
 package marco.rcl.shared;
 
 /**
- * Created by marko on 23/05/2016.
+ * Support class used to model commands
  */
-public class Command{
+
+public class Command {
     private int command;
     private User user;
 
