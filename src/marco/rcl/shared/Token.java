@@ -6,6 +6,8 @@ import java.util.concurrent.TimeUnit;
 /**
  * This class models the tokens used for authentication between clients/server, it is automatically generated and not
  * editable.
+ * @author Marco Barbone
+ * @see UUID
  * TODO: would be nice to have a way to check if the Token generated is used by another client
  */
 public class Token {
@@ -24,8 +26,7 @@ public class Token {
      */
     @Override
     public boolean equals(Object obj) {
-        if ((null == obj) || (obj.getClass() != Token.class))
-            return false;
+        if ((null == obj) || (obj.getClass() != Token.class)) return false;
         Token token = (Token) obj;
         return token.id.equals(this.id);
     }

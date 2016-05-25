@@ -9,7 +9,7 @@ public class User {
     private final String password;
     private Token token;
 
-    public User(String name, String password) {
+      public User(String name, String password) {
         this.name = name;
         this.password = password;
         this.token = new Token();
