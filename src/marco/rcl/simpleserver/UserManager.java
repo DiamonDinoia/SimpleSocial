@@ -1,10 +1,7 @@
 package marco.rcl.simpleserver;
 
-import marco.rcl.shared.Command;
-import marco.rcl.shared.Response;
 
 import java.net.Socket;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Logger;
 
 /**
@@ -13,11 +10,7 @@ import java.util.logging.Logger;
  */
 public class UserManager {
     private Logger log;
-    private LinkedBlockingQueue<Socket> connections;
+    private Socket socket;
 
 
-    public static Response commandResponce(Command command){
-
-        return new Response();
-    }
 }

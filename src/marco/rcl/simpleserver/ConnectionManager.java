@@ -3,15 +3,11 @@ package marco.rcl.simpleserver;
 import marco.rcl.shared.ConnectionParam;
 
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
-import java.net.Socket;
 import java.net.SocketException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Logger;
 
 /**
@@ -25,7 +21,6 @@ public class ConnectionManager {
     private Logger log = null;
     private ExecutorService executorService;
     private boolean accept = false;
-    private LinkedBlockingQueue<Socket> connections;
 
     /**
      * Contsructor, initializes the socket
@@ -50,43 +45,17 @@ public class ConnectionManager {
         executorService.execute(new ClientAccepter() {
             @Override
             public void run() {
-                try {
-                    while (accept) {
-                        try {
-                            connections.put(serverSocket.accept());
-                        } catch (InterruptedException e) {
-                            log.severe("Problems in accepting clients " + e.toString());
-                            e.printStackTrace();
-                        }
-                        log.info("client accepted");
-                    }
-                }catch (SocketException e){
-                    if (accept){
-                        log.severe("Failed accepting client " + e.toString());
-                        e.printStackTrace();
-                    }
-                    else {
-                        log.info("stopped accepting connections, serverSocked closed");
-                    }
-                }catch(IOException e){
-                    log.severe("Failed accepting client " + e.toString());
-                    e.printStackTrace();
-                }
-            }
-        });
-    }
-
-    private void dispatcher(){
-        abstract class CommandResponder implements Runnable{};
-        executorService.submit(new CommandResponder() {
-            @Override
-            public void run() {
-                while (accept){
+                while (accept) {
                     try {
-                        Socket socket = connections.take();
-
-                    } catch (InterruptedException e) {
-                        log.severe("failed taking from the queue" + e.toString());
+                        serverSocket.accept();
+                        log.info("client accepted");
+                    } catch (SocketException e) {
+                        if (accept) {
+                            log.severe("Failed accepting client " + e.toString());
+                            e.printStackTrace();
+                        } else log.info("stopped accepting connections, serverSocket closed");
+                    } catch (IOException e) {
+                        log.severe("Failed accepting client " + e.toString());
                         e.printStackTrace();
                     }
                 }
@@ -100,7 +69,6 @@ public class ConnectionManager {
     public void startManagingConnections(){
         accept=true;
         startAccepting();
-        dispatcher();
     }
 
     /**
