@@ -19,9 +19,8 @@ public class ConnectionManager {
     private InetAddress address = ConnectionParam.ADDRESS;
     private int backlog = 100;
     private Logger log = null;
-    private ExecutorService executorService;
+    private ExecutorService accepter;
     private boolean accept = false;
-
     /**
      * Contsructor, initializes the socket
      */
@@ -30,7 +29,7 @@ public class ConnectionManager {
             this.log = log;
             serverSocket = new ServerSocket(port, backlog, address);
             log.info("created serverSocket");
-            executorService = Executors.newCachedThreadPool();
+            accepter = Executors.newSingleThreadExecutor();
         } catch (IOException e) {
             log.severe("Failed creation serverSocket " + e.toString());
             e.printStackTrace();
@@ -41,11 +40,11 @@ public class ConnectionManager {
     /**
      * Initiates the ConnectionManager to accept new connections
      */
-    public void startAcceptingConnections(){
+    public void startManagingConnections(){
         // inner class, used to implements lexical closures
         abstract class ClientAccepter implements Runnable{}
         accept=true;
-        executorService.submit(new ClientAccepter() {
+        accepter.submit(new ClientAccepter() {
             @Override
             public void run() {
                 try {
@@ -73,7 +72,7 @@ public class ConnectionManager {
     /**
      * stops the ConnectionManager to accept new clients
      */
-    public void stopAcceptingConnections(){
+    public void stopManagingConnections(){
         accept=false;
     }
 
@@ -88,6 +87,6 @@ public class ConnectionManager {
             log.severe("error closing connection manager " + e.toString());
             e.printStackTrace();
         }
-        executorService.shutdown();
+        accepter.shutdown();
     }
 }

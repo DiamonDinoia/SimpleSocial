@@ -9,6 +9,6 @@ public class Server {
     public static void main(String[] args) {
         Logger log = LoggerFactory.getLogger("serverLogger","server");
         ConnectionManager cm = new ConnectionManager(log);
-        cm.startAcceptingConnections();
+        cm.startManagingConnections();
     }
 }
