@@ -3,11 +3,15 @@ package marco.rcl.simpleserver;
 import marco.rcl.shared.ConnectionParam;
 
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.net.SocketException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Logger;
 
 /**
@@ -19,8 +23,10 @@ public class ConnectionManager {
     private InetAddress address = ConnectionParam.ADDRESS;
     private int backlog = 100;
     private Logger log = null;
-    private ExecutorService accepter;
+    private ExecutorService executorService;
     private boolean accept = false;
+    private LinkedBlockingQueue<Socket> connections;
+
     /**
      * Contsructor, initializes the socket
      */
@@ -29,7 +35,7 @@ public class ConnectionManager {
             this.log = log;
             serverSocket = new ServerSocket(port, backlog, address);
             log.info("created serverSocket");
-            accepter = Executors.newSingleThreadExecutor();
+            executorService = Executors.newCachedThreadPool();
         } catch (IOException e) {
             log.severe("Failed creation serverSocket " + e.toString());
             e.printStackTrace();
@@ -37,19 +43,21 @@ public class ConnectionManager {
         }
     }
 
-    /**
-     * Initiates the ConnectionManager to accept new connections
-     */
-    public void startManagingConnections(){
+
+    private void startAccepting(){
         // inner class, used to implements lexical closures
         abstract class ClientAccepter implements Runnable{}
-        accept=true;
-        accepter.submit(new ClientAccepter() {
+        executorService.execute(new ClientAccepter() {
             @Override
             public void run() {
                 try {
                     while (accept) {
-                        serverSocket.accept();
+                        try {
+                            connections.put(serverSocket.accept());
+                        } catch (InterruptedException e) {
+                            log.severe("Problems in accepting clients " + e.toString());
+                            e.printStackTrace();
+                        }
                         log.info("client accepted");
                     }
                 }catch (SocketException e){
@@ -61,12 +69,38 @@ public class ConnectionManager {
                         log.info("stopped accepting connections, serverSocked closed");
                     }
                 }catch(IOException e){
-                        log.severe("Failed accepting client " + e.toString());
+                    log.severe("Failed accepting client " + e.toString());
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
+
+    private void dispatcher(){
+        abstract class CommandResponder implements Runnable{};
+        executorService.submit(new CommandResponder() {
+            @Override
+            public void run() {
+                while (accept){
+                    try {
+                        Socket socket = connections.take();
+
+                    } catch (InterruptedException e) {
+                        log.severe("failed taking from the queue" + e.toString());
                         e.printStackTrace();
                     }
                 }
+            }
         });
+    }
 
+    /**
+     * Initiates the ConnectionManager to accept new connections
+     */
+    public void startManagingConnections(){
+        accept=true;
+        startAccepting();
+        dispatcher();
     }
 
     /**
@@ -87,6 +121,6 @@ public class ConnectionManager {
             log.severe("error closing connection manager " + e.toString());
             e.printStackTrace();
         }
-        accepter.shutdown();
+        executorService.shutdown();
     }
 }
