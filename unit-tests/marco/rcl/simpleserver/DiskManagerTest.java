@@ -16,7 +16,7 @@ public class DiskManagerTest {
 
 
     File file = null;
-
+    File file2 = null;
     // update userfile with one user
     @Before
     public void setUpUpdate(){
@@ -39,12 +39,12 @@ public class DiskManagerTest {
     // update userfile with multiple users
     @Before
     public void setUpUpdate2(){
-        file = new File("userfiletest2");
+        file2 = new File("userfiletest2");
     }
 
     @After
     public void tearDownUpdate2(){
-        file.delete();
+        file2.delete();
     }
 
     @Test
@@ -89,7 +89,7 @@ public class DiskManagerTest {
 
     @After
     public void tearDown2() {
-        File file = new File("testfile2");
+        file = new File("testfile2");
         file.delete();
 
     }

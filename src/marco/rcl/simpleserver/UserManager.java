@@ -1,13 +1,13 @@
 package marco.rcl.simpleserver;
 
 
-import marco.rcl.shared.Command;
-import marco.rcl.shared.Commands;
-import marco.rcl.shared.Errors;
-import marco.rcl.shared.Response;
+import marco.rcl.shared.*;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.concurrent.*;
 import java.util.logging.Logger;
 
@@ -24,68 +24,185 @@ class UserManager {
     private boolean manage = false;
     private boolean append = false;
 
+    /**
+     * Constructor, creates a new Usermanager
+     */
     UserManager() {
+        // try to restore the previous session
         users = DiskManager.restoreFromDisk(userFilename);
+        // fatal error if the restore fails with unknown error then exit
         if (users == null) throw new RuntimeException("problems restoring users");
         connections = new LinkedBlockingQueue<>();
         ex = Executors.newCachedThreadPool();
     }
 
+    /**
+     * @param socket represents che connection with the user
+     * @throws InterruptedException
+     */
     void submit(Socket socket) throws InterruptedException{
         connections.put(socket);
     }
 
-    public void startManaging(){
-        manage=true;
-        ex.submit(this::responding);
+    /**
+     * function used to perform asynchronous updates to de disk, is syncronized because can be called by more threads
+     * at once.
+     * TODO: use a dispatch list in order to write more object at the time
+     * @param u the new user to be saved on the disk
+     */
+    private synchronized void updateUserFile(User u){
+        DiskManager.updateUserFile(u, userFilename, append);
+        append = true;
     }
 
+    /**
+     * function used to handle registration request from the users
+     * @param name Username
+     * @param password user's password
+     * @return server response, contains the token if the user is correctly registered, or an error message if something
+     * went wrong
+     */
     private Response register(String name, String password){
-        if (name==null) return new Response(Errors.UsernameNotValid,null);
-        if (password==null) return new Response(Errors.PasswordNotValid,null);
-        if (users.containsKey(name)) return new Response(Errors.UserAlreadyRegistered, null);
+        // if the username is already taken by other users
+        if (users.containsKey(name)) return new Response(Errors.UserAlreadyRegistered);
+        // if the username and password are either valid, add the user to the registered user
         User u = new User(name, password);
         users.put(name,u);
-        synchronized (this) {
-            DiskManager.updateUserFile(u, userFilename, append);
-            append = true;
-        }
-        return new Response(Errors.noErrors,u.getToken());
+        // perform async update to the userFile on the disk
+        ex.submit(()-> updateUserFile(u));
+        return new Response(u.getToken());
     }
 
+    /**
+     * funciton used to handle login request from the user
+     * @param name Username
+     * @param password user's password
+     * @return server response, contains the token if the user is correctly registered, or an error message if something
+     * went wrong
+     */
+    private Response login(String name, String password){
+        // the user must be registered
+        if (!users.containsKey(name)) return new Response(Errors.UserNotRegistered);
+        // checking user password
+        if (!users.get(name).getPassword().equals(password)) return new Response(Errors.PasswordNotValid);
+        // if the user is registered the update his status
+        User u = users.get(name)
+                    .setOnline();
+        return new Response(u.getToken());
+    }
+
+    /**
+     * funciton used to handle logout request from the user
+     * @param name Username
+     * @param password user's password
+     * @return server response, contains confirm message if the user is correctly registered, or an error message
+     * if something went wrong
+     */
+    private Response logout(String name, String password, Token token) {
+        // the user must be registered
+        if (!users.containsKey(name)) return new Response(Errors.UserNotRegistered);
+        // checking user password
+        if (!users.get(name).getPassword().equals(password)) return new Response(Errors.PasswordNotValid);
+        // checking the token
+        User u = users.get(name);
+        if (!u.getToken().isValid() || !u.getToken().equals(token)) return new Response(Errors.TokenNotValid);
+        u.setOffLine();
+        return new Response();
+    }
+
+    /**
+     * funciton used to handle search request from the user
+     * @param name Username
+     * @param password user's password
+     * @return server response, contains an array of users if the user is registered and loggedin, or an error message
+     * if something went wrong
+     */
+    private Response search(String name, String password, Token token, String searchUser) {
+        // the user must be registered
+        if (!users.containsKey(name)) return new Response(Errors.UserNotRegistered);
+        User u = users.get(name);
+        // checking user password
+        if (!u.getPassword().equals(password)) return new Response(Errors.PasswordNotValid);
+        // the user must be online
+        if (!u.isOnline()) return new Response(Errors.UserNotLogged);
+        // checking the token
+        if (!u.getToken().isValid() || !u.getToken().equals(token)) return new Response(Errors.TokenNotValid);
+        ArrayList<UserShared> result = new ArrayList<>();
+        users.forEach((key,user)-> {
+            if (key.toLowerCase().contains(searchUser.toLowerCase()))
+                result.add(new UserShared(user.getName(),user.isOnline()));
+        });
+        return new Response((UserShared[]) result.toArray());
+    }
+
+    /**
+     * this function is used to decode the command from the user and generate the correct response
+     * @param command User's request
+     * @return error message if the command is invalid or the confirm message
+     */
     private Response decodeCommand(Command command){
+        String name = command.getName();
+        String password = command.getPassword();
+        Token token = command.getToken();
+        // the name and the password must either be not null
+        if (name==null) return new Response(Errors.UsernameNotValid);
+        if (password==null) return new Response(Errors.PasswordNotValid);
+
         switch (command.getCommand()){
             case Commands.Register:
                 return register(command.getName(),command.getPassword());
+            case Commands.Login:
+                return login(command.getName(),command.getPassword());
+            case Commands.Logout:
+                return logout(name,password,token);
+            case Commands.SearchUser:
+                return search(name,password,token,command.getSearch());
+            default: return null;
 
-            default:return null;
         }
     }
 
-    private void responde(Socket socket){
+    /**
+     * this function is used to perform async communications with the users
+     * @param socket the connection with the user
+     */
+    private void responder(Socket socket){
+        // it is all in one try block because is not important which one fails, the user can always try another time
+        Command command = null;
         try {
             ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
-            Command command = (Command) in.readObject();
-
-        } catch (IOException e) {
+            command = (Command) in.readObject();
+            Response response = decodeCommand(command);
+            ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+            log.info("user " + command.getName() + "correctly handled");
+            out.writeObject(response);
+        // simply logs the error, this is not a fatal one
+        } catch (IOException | ClassNotFoundException e) {
+            log.severe("user " + (command!=null ? command.getName() : "" ) + "not correctly handled " + e.toString() );
             e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
+        // cleanup and return
+        } finally {
+            try {socket.close();} catch (IOException ignored) {}
         }
     }
 
-
-    private void responding(){
+    /**
+     * tells the UserManager to start working, and performing async dispatching
+     */
+    void startManaging() {
+        manage=true;
+        ex.submit(() -> {
             try {
+                // while not interrupted
                 while (manage){
                     Socket socket = connections.take();
-                    ex.submit(() -> responde(socket));
+                    ex.submit(() -> responder(socket));
                 }
+                // else terminate
             } catch (InterruptedException e) {
-                log.info("UserMager interrupted, exiting...");
+                log.info("UserManager interrupted, exiting...");
                 e.printStackTrace();
-        }
-
+            }
+        });
     }
-
 }

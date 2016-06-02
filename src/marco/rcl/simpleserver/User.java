@@ -8,7 +8,7 @@ import java.io.Serializable;
 /**
  * This class is used to represent the user
  */
-public class User  implements Serializable{
+public class User implements Serializable{
 
     private final long serialVersionUID = 1L;
 
@@ -29,8 +29,16 @@ public class User  implements Serializable{
         return online;
     }
 
-    public void setOnline(boolean online) {
-        this.online = online;
+    public User setOnline() {
+        this.online = true;
+        this.token = new Token();
+        return this;
+    }
+
+    public User setOffLine() {
+        this.token = null;
+        this.online = false;
+        return this;
     }
 
     public String getName() {
@@ -45,8 +53,9 @@ public class User  implements Serializable{
         return token;
     }
 
-    public void setToken(Token token) {
-        this.token = token;
+    public User updateToken() {
+        this.token = new Token();
+        return this;
     }
 
     @Override

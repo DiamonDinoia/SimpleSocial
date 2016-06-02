@@ -40,11 +40,7 @@ public class ConnectionManager {
 
 
     private void startAccepting(){
-        // inner class, used to implements lexical closures
-        abstract class ClientAccepter implements Runnable{}
-        executorService.submit(new ClientAccepter() {
-            @Override
-            public void run() {
+        executorService.submit(() -> {
                 while (accept) {
                     try {
                         userManager.submit(serverSocket.accept());
@@ -63,7 +59,6 @@ public class ConnectionManager {
                         e.printStackTrace();
                     }
                 }
-            }
         });
     }
 

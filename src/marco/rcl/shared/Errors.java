@@ -9,5 +9,8 @@ public interface Errors {
     int UserAlreadyRegistered = 1;
     int UsernameNotValid = 2;
     int PasswordNotValid = 3;
+    int UserNotRegistered = 4;
+    int TokenNotValid = 5;
+    int UserNotLogged = 6;
 
 }
