@@ -18,16 +18,15 @@ public class ConnectionManager {
     private int port = ConnectionParam.PORT;
     private InetAddress address = ConnectionParam.ADDRESS;
     private int backlog = 100;
-    private Logger log = null;
+    private Logger log = Server.getLog();
     private ExecutorService executorService;
     private boolean accept = false;
 
     /**
      * Contsructor, initializes the socket
      */
-    public ConnectionManager(Logger log) {
+    public ConnectionManager() {
         try {
-            this.log = log;
             serverSocket = new ServerSocket(port, backlog, address);
             log.info("created serverSocket");
             executorService = Executors.newCachedThreadPool();

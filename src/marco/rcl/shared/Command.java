@@ -1,5 +1,7 @@
 package marco.rcl.shared;
 
+import marco.rcl.simpleserver.User;
+
 /**
  * Support class used to model commands
  */

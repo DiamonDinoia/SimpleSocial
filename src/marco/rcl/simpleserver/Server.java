@@ -1,14 +1,17 @@
 package marco.rcl.simpleserver;
 
 import marco.rcl.shared.LoggerFactory;
-
 import java.util.logging.Logger;
 
 public class Server {
+   private static final Logger log = LoggerFactory.getLogger("serverLogger","server");
 
     public static void main(String[] args) {
-        Logger log = LoggerFactory.getLogger("serverLogger","server");
-        ConnectionManager cm = new ConnectionManager(log);
-        cm.startManagingConnections();
+        ConnectionManager cm = new ConnectionManager();
+        new UserManager();
+    }
+
+    public static Logger getLog() {
+        return log;
     }
 }
