@@ -3,10 +3,15 @@ package marco.rcl.simpleserver;
 
 import marco.rcl.shared.Token;
 
+import java.io.Serializable;
+
 /**
  * This class is used to represent the user
  */
-public class User {
+public class User  implements Serializable{
+
+    private final long serialVersionUID = 1L;
+
     private final String name;
     private final String password;
     transient private Token token;

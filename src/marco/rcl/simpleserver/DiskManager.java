@@ -20,7 +20,7 @@ public class DiskManager {
      * @param userFilename name and path of the file containing all the registered users
      * @return ConcurrentHashMap if the function correctly restores the users from the file, null if it fails
      */
-    static ConcurrentHashMap<String,User> restoreFromDisk(String userFilename) {
+    public static ConcurrentHashMap<String,User> restoreFromDisk(String userFilename) {
         ConcurrentHashMap<String, User> registeredUsers = new ConcurrentHashMap<>();
         ObjectInputStream in=null;
         FileInputStream fi=null;
@@ -50,7 +50,7 @@ public class DiskManager {
         } catch (FileNotFoundException e){
             log.info("Registered users file not exists, no user registered");
         // this is sure an error
-        } catch (IOException | ClassNotFoundException e) {
+        } catch (IOException | ClassNotFoundException | ClassCastException e ) {
             log.severe("error from restoring registered user list from disk " + e.toString());
             e.printStackTrace();
             registeredUsers = null;
@@ -71,4 +71,47 @@ public class DiskManager {
         }
         return registeredUsers;
     }
+
+
+
+    public static void updateUserFile(User u, String userFilename, boolean append ){
+        FileOutputStream fo = null;
+        AppendingObjectOutputStream outAppend = null;
+        ObjectOutputStream out = null;
+        try {
+            fo = new FileOutputStream(userFilename,append);
+            if(append){
+                outAppend = new AppendingObjectOutputStream(fo);
+                outAppend.writeObject(u);
+            }else {
+                out = new ObjectOutputStream(fo);
+                out.writeObject(u);
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (fo != null) fo.close();
+                if (outAppend != null) outAppend.close();
+                if (out!=null) out.close();
+            } catch (IOException e) {}
+        }
+    }
+
+}
+
+
+class AppendingObjectOutputStream extends ObjectOutputStream {
+
+    public AppendingObjectOutputStream(OutputStream out) throws IOException {
+        super(out);
+    }
+
+    @Override
+    protected void writeStreamHeader() throws IOException {
+        reset();
+    }
+
 }

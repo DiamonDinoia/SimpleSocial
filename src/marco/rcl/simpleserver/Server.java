@@ -8,7 +8,7 @@ public class Server {
 
     public static void main(String[] args) {
         ConnectionManager cm = new ConnectionManager();
-        new UserManager();
+        cm.startManagingConnections();
     }
 
     public static Logger getLog() {

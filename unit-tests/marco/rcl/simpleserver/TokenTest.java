@@ -1,5 +1,8 @@
+package marco.rcl.simpleserver;
+
 import marco.rcl.shared.Token;
 import static org.junit.Assert.*;
+
 
 /**
  * Created by Marco on 25/05/16.

@@ -5,4 +5,9 @@ package marco.rcl.shared;
  */
 public interface Errors {
 
+    int noErrors = 0;
+    int UserAlreadyRegistered = 1;
+    int UsernameNotValid = 2;
+    int PasswordNotValid = 3;
+
 }

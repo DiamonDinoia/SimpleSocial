@@ -21,7 +21,7 @@ public class ConnectionManager {
     private Logger log = Server.getLog();
     private ExecutorService executorService;
     private boolean accept = false;
-
+    private UserManager userManager = null;
     /**
      * Contsructor, initializes the socket
      */
@@ -29,7 +29,8 @@ public class ConnectionManager {
         try {
             serverSocket = new ServerSocket(port, backlog, address);
             log.info("created serverSocket");
-            executorService = Executors.newCachedThreadPool();
+            executorService = Executors.newSingleThreadExecutor();
+            userManager = new UserManager();
         } catch (IOException e) {
             log.severe("Failed creation serverSocket " + e.toString());
             e.printStackTrace();
@@ -41,12 +42,12 @@ public class ConnectionManager {
     private void startAccepting(){
         // inner class, used to implements lexical closures
         abstract class ClientAccepter implements Runnable{}
-        executorService.execute(new ClientAccepter() {
+        executorService.submit(new ClientAccepter() {
             @Override
             public void run() {
                 while (accept) {
                     try {
-                        serverSocket.accept();
+                        userManager.submit(serverSocket.accept());
                         log.info("client accepted");
                     } catch (SocketException e) {
                         if (accept) {
@@ -55,6 +56,10 @@ public class ConnectionManager {
                         } else log.info("stopped accepting connections, serverSocket closed");
                     } catch (IOException e) {
                         log.severe("Failed accepting client " + e.toString());
+                        e.printStackTrace();
+                    } catch (InterruptedException e) {
+                        log.info("ClientAccepter Interrupted, exiting...");
+                        accept = false;
                         e.printStackTrace();
                     }
                 }
@@ -68,6 +73,7 @@ public class ConnectionManager {
     public void startManagingConnections(){
         accept=true;
         startAccepting();
+        userManager.startManaging();
     }
 
     /**
@@ -75,6 +81,7 @@ public class ConnectionManager {
      */
     public void stopManagingConnections(){
         accept=false;
+        executorService.shutdown();
     }
 
     /**

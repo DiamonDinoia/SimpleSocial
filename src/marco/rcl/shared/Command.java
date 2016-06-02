@@ -7,7 +7,25 @@ import marco.rcl.simpleserver.User;
  */
 
 public class Command {
-    private int command;
-    private User user;
+    public Command(int command, String name, String password) {
+        this.command = command;
+        this.name = name;
+        this.password = password;
+    }
 
+    private int command;
+    private String name;
+    private String password;
+
+    public int getCommand() {
+        return command;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getPassword() {
+        return password;
+    }
 }
