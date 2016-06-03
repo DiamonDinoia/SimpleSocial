@@ -15,22 +15,22 @@ import java.util.logging.Logger;
  */
 public class ConnectionManager {
     private ServerSocket serverSocket;
-    private int port = ConnectionParam.PORT;
-    private InetAddress address = ConnectionParam.ADDRESS;
-    private int backlog = 100;
     private Logger log = Server.getLog();
     private ExecutorService executorService;
     private boolean accept = false;
     private UserManager userManager = null;
+    private ConnectionParam parameters = null;
     /**
      * Contsructor, initializes the socket
      */
-    public ConnectionManager() {
+    public ConnectionManager(ConnectionParam connectionParam) {
         try {
-            serverSocket = new ServerSocket(port, backlog, address);
+            parameters = connectionParam;
+            InetAddress address = InetAddress.getByName(connectionParam.ServerAddress);
+            serverSocket = new ServerSocket((int)parameters.ServerPort, (int)parameters.Backlog ,address);
             log.info("created serverSocket");
             executorService = Executors.newSingleThreadExecutor();
-            userManager = new UserManager();
+            userManager = new UserManager(parameters);
         } catch (IOException e) {
             log.severe("Failed creation serverSocket " + e.toString());
             e.printStackTrace();

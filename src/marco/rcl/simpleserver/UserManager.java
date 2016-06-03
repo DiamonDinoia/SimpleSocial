@@ -16,24 +16,26 @@ import java.util.logging.Logger;
  * Created by Marco on 29/05/16.
  */
 class UserManager {
-    private static Logger log = Server.getLog();
+    private static final Logger log = Server.getLog();
     private ConcurrentHashMap<String,User> users;
     private final static String userFilename = "./ServerData/Users.ser";
     private LinkedBlockingQueue<Socket> connections;
     private ExecutorService ex;
     private boolean manage = false;
     private boolean append = false;
-
+    private KeepAliveManager keepAliveManager;
     /**
      * Constructor, creates a new Usermanager
      */
-    UserManager() {
+    UserManager(ConnectionParam param) {
         // try to restore the previous session
         users = DiskManager.restoreFromDisk(userFilename);
         // fatal error if the restore fails with unknown error then exit
         if (users == null) throw new RuntimeException("problems restoring users");
         connections = new LinkedBlockingQueue<>();
         ex = Executors.newCachedThreadPool();
+        // start the keep alive  manager in order to check the status of the users
+        keepAliveManager = new KeepAliveManager(users,param,ex);
     }
 
     /**
@@ -70,6 +72,7 @@ class UserManager {
         users.put(name,u);
         // perform async update to the userFile on the disk
         ex.submit(()-> updateUserFile(u));
+        // add the user to the keep alive checklist
         return new Response(u.getToken());
     }
 
@@ -88,6 +91,7 @@ class UserManager {
         // if the user is registered the update his status
         User u = users.get(name)
                     .setOnline();
+        // add the user to the keep alive checklist
         return new Response(u.getToken());
     }
 
@@ -147,12 +151,13 @@ class UserManager {
         // the name and the password must either be not null
         if (name==null) return new Response(Errors.UsernameNotValid);
         if (password==null) return new Response(Errors.PasswordNotValid);
-
+        // name are not case sensitive
+        name = name.toUpperCase();
         switch (command.getCommand()){
             case Commands.Register:
-                return register(command.getName(),command.getPassword());
+                return register(name,password);
             case Commands.Login:
-                return login(command.getName(),command.getPassword());
+                return login(name,password);
             case Commands.Logout:
                 return logout(name,password,token);
             case Commands.SearchUser:
@@ -190,6 +195,7 @@ class UserManager {
      * tells the UserManager to start working, and performing async dispatching
      */
     void startManaging() {
+        if (manage) return;
         manage=true;
         ex.submit(() -> {
             try {
@@ -204,5 +210,6 @@ class UserManager {
                 e.printStackTrace();
             }
         });
+        keepAliveManager.startUpdatingStatus();
     }
 }
