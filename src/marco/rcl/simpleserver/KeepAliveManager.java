@@ -9,8 +9,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Logger;
 
 
@@ -28,12 +26,11 @@ public class KeepAliveManager {
     private DatagramSocket server;
     private boolean receiving = false;
     private int threadsNumber = 0;
-    private int terminated = 0;
     private long maxPacketLength = 96;
     private int receivingBufferSize;
-    private ReentrantLock lock = new ReentrantLock();
-    private Condition cond = lock.newCondition();
     private ConcurrentSkipListSet<String> onlineUsers;
+
+    private boolean[] flags = new boolean[512];
 
     /**
      * @param users Registered user list
@@ -86,20 +83,16 @@ public class KeepAliveManager {
      * function called in order to receive datagram packet, checks if the response is arrived in time and then
      * updates the list
      */
-    private void receivingTask(){
+    private void receivingTask(int index){
         DatagramPacket dp = new DatagramPacket(new byte[96],96);
             try {
-                while (receiving){
+                while (receiving && flags[index]){
                     server.receive(dp);
                     String[] message = KeepAlive.decodeMessage(dp.getData());
                     if (new Long(message[1]) - System.currentTimeMillis() <= TimeUnit.SECONDS.toMillis(10)){
                         onlineUsers.add(message[0]);
                     }
                 }
-                lock.lock();
-                terminated++;
-                cond.signal();
-                lock.unlock();
             } catch (IOException e) {
                 e.printStackTrace();
                 stopUpdatingStatus();
@@ -109,53 +102,25 @@ public class KeepAliveManager {
         }
     }
 
-    /**
-     * this demon checks if the user not sent an answer or it is no valid then set his status to offline
-     */
-    private void userDemon(){
-            try {
-                // First time I want to be activated when the response are mostly arrived
-                Thread.sleep(9);
-                while (computing){
-                    users.forEach((name,value) -> {
-                        if (!onlineUsers.contains(name)) value.setOffLine();
-                    });
-                    Thread.sleep(TimeUnit.SECONDS.toMillis(10));
-                }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-                stopUpdatingStatus();
-                log.severe("this should not happen in demon " + e.toString());
-                close();
-                throw new RuntimeException(e);
-            }
-    }
 
     /**
-     * Because UDP has finite buffer, in case too much datagrams arrives someone can get lost. To prevent this I try to
-     * speedup readings from it in order to minimize packet loss. To achieve this I calculate I pseudo-optimal number of
-     * receiving threads and if needed I try to start or terminate them.
+     * Because UDP has finite buffer, in case too much datagram packets arrives someone can get lost. To prevent this
+     * I try to speedup readings from it in order to minimize packet loss. To achieve this I calculate I pseudo-optimal
+     * number of receiving threads and if needed then try to start or terminate them.
      */
     private void setReceivingThreads(){
         // calculating the "optimal" number of threads
         int threads = (int)((3 * onlineUsers.size() * maxPacketLength )/ receivingBufferSize)+1;
         // if the running threads are optimal return
-        if (threadsNumber == threads) return;
+        if (threadsNumber == threads || threads > flags.length) return;
         // too few threads, starting
         if (threadsNumber < threads)
-            for ( ; threadsNumber<threads; threadsNumber++ ) ex.submit(this::receivingTask);
+            for ( ; threadsNumber<threads; threadsNumber++ ){
+                flags[threadsNumber] = true;
+                ex.submit(() -> receivingTask(threadsNumber));
+            }
         // too much, terminating
-        else {
-            receiving = false;
-            lock.lock();
-            try { while (terminated<threadsNumber) cond.await();
-            } catch (InterruptedException e) { e.printStackTrace();}
-            terminated = 0;
-            lock.unlock();
-            receiving = true;
-            threadsNumber = threads;
-            for (int i = 0; i < threadsNumber; i++) ex.submit(this::receivingTask);
-        }
+        else for (; threadsNumber>threads; threads--) flags[threadsNumber]=false;
     }
 
 
@@ -163,7 +128,7 @@ public class KeepAliveManager {
      * this function tells to start computing keep-alive request on the multicast
      */
     public void startUpdatingStatus(){
-       // if altready started do nothing
+       // if already started do nothing
         if (computing) return;
         computing = true;
         ex.submit(() -> {
@@ -175,6 +140,10 @@ public class KeepAliveManager {
                     multicast.send(keepAlivePacket);
                     // wait 10 seconds
                     Thread.sleep(TimeUnit.SECONDS.toMillis(10));
+
+                    users.forEach((name,value) -> {
+                        if (!onlineUsers.contains(name)) value.setOffLine();
+                    });
                 }
             } catch (IOException | InterruptedException e) {
                 log.severe("problems in computing KeepAlive messages " + e.toString());

@@ -16,13 +16,25 @@ public class User implements Serializable{
     private final String password;
     transient private Token token;
     transient private boolean online;
+    transient private String address;
+    transient private int port;
 
+    public User(String name, String password, String address, int port) {
+        this.name = name;
+        this.password = password;
+        this.token = new Token();
+        this.online = false;
+        this.address = address;
+        this.port = port;
+    }
 
     public User(String name, String password) {
         this.name = name;
         this.password = password;
         this.token = new Token();
         this.online = false;
+        this.address = null;
+        this.port = -1;
     }
 
     public boolean isOnline() {
@@ -55,6 +67,24 @@ public class User implements Serializable{
 
     public User updateToken() {
         this.token = new Token();
+        return this;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public int getPort() {
+        return port;
+    }
+
+    public User setAddress(String address) {
+        this.address = address;
+        return this;
+    }
+
+    public User setPort(int port) {
+        this.port = port;
         return this;
     }
 

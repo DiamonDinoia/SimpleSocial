@@ -12,5 +12,6 @@ public interface Errors {
     int UserNotRegistered = 4;
     int TokenNotValid = 5;
     int UserNotLogged = 6;
+    int AddressNotValid = 7;
 
 }

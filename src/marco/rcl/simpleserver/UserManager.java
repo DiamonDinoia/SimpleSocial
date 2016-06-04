@@ -47,9 +47,9 @@ class UserManager {
     }
 
     /**
-     * function used to perform asynchronous updates to de disk, is syncronized because can be called by more threads
+     * function used to perform asynchronous updates to de disk, is synchronized because can be called by more threads
      * at once.
-     * TODO: use a dispatch list in order to write more object at the time
+     * TODO: use a dispatch list in order to write more object at the time, and check return value
      * @param u the new user to be saved on the disk
      */
     private synchronized void updateUserFile(User u){
@@ -64,11 +64,13 @@ class UserManager {
      * @return server response, contains the token if the user is correctly registered, or an error message if something
      * went wrong
      */
-    private Response register(String name, String password){
+    private Response register(String name, String password, String address, int port){
         // if the username is already taken by other users
         if (users.containsKey(name)) return new Response(Errors.UserAlreadyRegistered);
+        // if the address or the port are null return an error
+        if (address==null || port < 0) return new Response(Errors.AddressNotValid);
         // if the username and password are either valid, add the user to the registered user
-        User u = new User(name, password);
+        User u = new User(name, password,address,port);
         users.put(name,u);
         // perform async update to the userFile on the disk
         ex.submit(()-> updateUserFile(u));
@@ -77,26 +79,30 @@ class UserManager {
     }
 
     /**
-     * funciton used to handle login request from the user
+     * function used to handle login request from the user
      * @param name Username
      * @param password user's password
      * @return server response, contains the token if the user is correctly registered, or an error message if something
      * went wrong
      */
-    private Response login(String name, String password){
+    private Response login(String name, String password, String address, int port){
         // the user must be registered
         if (!users.containsKey(name)) return new Response(Errors.UserNotRegistered);
+        // if the address or the port are null return an error
+        if (address==null || port < 0) return new Response(Errors.AddressNotValid);
         // checking user password
         if (!users.get(name).getPassword().equals(password)) return new Response(Errors.PasswordNotValid);
         // if the user is registered the update his status
         User u = users.get(name)
-                    .setOnline();
+                    .setOnline()
+                    .setAddress(address)
+                    .setPort(port);
         // add the user to the keep alive checklist
         return new Response(u.getToken());
     }
 
     /**
-     * funciton used to handle logout request from the user
+     * function used to handle logout request from the user
      * @param name Username
      * @param password user's password
      * @return server response, contains confirm message if the user is correctly registered, or an error message
@@ -115,7 +121,7 @@ class UserManager {
     }
 
     /**
-     * funciton used to handle search request from the user
+     * function used to handle search request from the user
      * @param name Username
      * @param password user's password
      * @return server response, contains an array of users if the user is registered and loggedin, or an error message
@@ -147,7 +153,10 @@ class UserManager {
     private Response decodeCommand(Command command){
         String name = command.getName();
         String password = command.getPassword();
+        String address = command.getAddress();
+        int port = command.getPort();
         Token token = command.getToken();
+
         // the name and the password must either be not null
         if (name==null) return new Response(Errors.UsernameNotValid);
         if (password==null) return new Response(Errors.PasswordNotValid);
@@ -155,9 +164,9 @@ class UserManager {
         name = name.toUpperCase();
         switch (command.getCommand()){
             case Commands.Register:
-                return register(name,password);
+                return register(name,password,address,port);
             case Commands.Login:
-                return login(name,password);
+                return login(name,password,address,port);
             case Commands.Logout:
                 return logout(name,password,token);
             case Commands.SearchUser:
