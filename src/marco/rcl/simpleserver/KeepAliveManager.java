@@ -1,6 +1,6 @@
 package marco.rcl.simpleserver;
 
-import marco.rcl.shared.ConnectionParam;
+import marco.rcl.shared.Configs;
 import marco.rcl.shared.KeepAlive;
 
 import java.io.IOException;
@@ -37,7 +37,7 @@ public class KeepAliveManager {
      * @param param Configuration parameters
      * @param ex ExecutorService in order to use only one in the server
      */
-    public KeepAliveManager(ConcurrentHashMap<String, User> users, ConnectionParam param, ExecutorService ex) {
+    public KeepAliveManager(ConcurrentHashMap<String, User> users, Configs param, ExecutorService ex) {
         this.users = users;
         this.ex = ex;
         try {

@@ -1,6 +1,6 @@
 package marco.rcl.simpleserver;
 
-import marco.rcl.shared.ConnectionParam;
+import marco.rcl.shared.Configs;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -19,14 +19,14 @@ public class ConnectionManager {
     private ExecutorService executorService;
     private boolean accept = false;
     private UserManager userManager = null;
-    private ConnectionParam parameters = null;
+    private Configs parameters = null;
     /**
      * Contsructor, initializes the socket
      */
-    public ConnectionManager(ConnectionParam connectionParam) {
+    public ConnectionManager(Configs configs) {
         try {
-            parameters = connectionParam;
-            InetAddress address = InetAddress.getByName(connectionParam.ServerAddress);
+            parameters = configs;
+            InetAddress address = InetAddress.getByName(configs.ServerAddress);
             serverSocket = new ServerSocket((int)parameters.ServerPort, (int)parameters.Backlog ,address);
             log.info("created serverSocket");
             executorService = Executors.newSingleThreadExecutor();

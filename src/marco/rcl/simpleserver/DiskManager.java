@@ -120,47 +120,6 @@ public class DiskManager {
      * @param fileName file in which store the friend list
      * @return null if something went wrong the hashMap if everything OK
      */
-    public static ConcurrentHashMap<String,ArrayList<FriendRequest>> RestorePendingRequest(String fileName){
-        FileInputStream fi = null;
-        ObjectInputStream in = null;
-        ConcurrentHashMap<String,ArrayList<FriendRequest>> friends = null;
-        log.info("start restoring friend lists");
-        try {
-            fi = new FileInputStream(fileName);
-            in = new ObjectInputStream(fi);
-            Object check  = in.readObject();
-            if (check instanceof ConcurrentHashMap ){
-                friends = (ConcurrentHashMap<String,ArrayList<FriendRequest>>) check;
-            }
-            log.info("friend list correctly restored");
-        } catch (FileNotFoundException e) {
-            log.info("Friend file list not exists creating a new one");
-            File f = new File(fileName);
-            friends = new ConcurrentHashMap<>();
-            e.printStackTrace();
-        } catch (IOException e) {
-            log.severe("Error during restore of friend list " + e.toString());
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            log.severe("Strange error during restoring friend list " + e.toString());
-            e.printStackTrace();
-        } catch (ClassCastException e) {
-            log.severe("friend file damaged or invalid " + e.toString());
-            e.printStackTrace();
-        } finally {
-            try {
-                // cleaning up and exiting
-                if (fi != null) fi.close();
-                if (in != null) in.close();
-            } catch (IOException ignored) {}
-        }
-        return friends;
-    }
-    /**
-     * Function used to save the friend list on the disk, to prevent data loss
-     * @param fileName file in which store the friend list
-     * @return null if something went wrong the hashMap if everything OK
-     */
     public static ConcurrentHashMap<String,ArrayList<String>> RestoreFriendList(String fileName){
         FileInputStream fi = null;
         ObjectInputStream in = null;
@@ -178,7 +137,14 @@ public class DiskManager {
             log.info("Friend file list not exists creating a new one");
             File f = new File(fileName);
             friends = new ConcurrentHashMap<>();
-            e.printStackTrace();
+            try {
+                f.createNewFile();
+                log.info("file correctly created");
+            } catch (IOException e1) {
+                log.severe("Impossible create friend file " + e1.toString() );
+                e.printStackTrace();
+                friends = null;
+            }
         } catch (IOException e) {
             log.severe("Error during restore of friend list " + e.toString());
             e.printStackTrace();
@@ -204,7 +170,7 @@ public class DiskManager {
      * @param fileName file in which dump the friend list
      * @return true in case of error false otherwise
      */
-    public boolean dumpFriendList(ConcurrentHashMap<String,ArrayList<FriendRequest>> friendList, String fileName ){
+    public boolean dumpFriendList(ConcurrentHashMap<String,ArrayList<String>> friendList, String fileName ){
         FileOutputStream fo = null;
         ObjectOutputStream out = null;
         log.info("dump started");

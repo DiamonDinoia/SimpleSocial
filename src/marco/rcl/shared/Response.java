@@ -5,48 +5,41 @@ package marco.rcl.shared;
  */
 public class Response {
 
-    private final int error;
-    private final Token token;
-    private final UserShared[] userList;
+    private int error = Errors.noErrors;
+    private Token token = null;
+    private String[] userList = null;
+    private UserShared[] friendList = null;
+
+    public Response(){}
 
     public Response(int error) {
         this.error = error;
-        token = null;
-        userList = null;
     }
 
     public Response(Token token) {
-        this.error = Errors.noErrors;
         this.token = token;
-        userList = null;
     }
 
-    public Response(){
-        this.error = Errors.noErrors;
-        token = null;
-        userList = null;
-    }
-
-    public Response(int error, Token token) {
-        this.error = error;
-        this.token = token;
-        userList = null;
-    }
-
-    public Response(UserShared[] userList){
+    public Response(String[] userList){
         this.userList = userList;
-        this.token = null;
-        this.error = Errors.noErrors;
+    }
+
+
+    public Response(UserShared[] friendList){
+        this.friendList = friendList;
     }
 
     public int getError() {
         return error;
     }
 
-
     public Token getToken() {
         return token;
     }
 
-    public UserShared[] getUserList(){return userList;}
+    public String[] getUserList(){return userList;}
+
+    public UserShared[] getFriendList() {
+        return friendList;
+    }
 }

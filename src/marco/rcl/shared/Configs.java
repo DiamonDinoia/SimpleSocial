@@ -13,7 +13,7 @@ import java.net.DatagramPacket;
  * this interface contains all connection parameters
  * Created by marko on 23/05/2016.
  */
-public class ConnectionParam {
+public class Configs {
     public final long ServerPort;
     public final String ServerAddress;
     public final String MulticastGroup;
@@ -23,10 +23,12 @@ public class ConnectionParam {
     public final String DatagramServerAddress;
     public final long DatagramServerPort;
     public final long MaxPacketLength;
+    public final String FriendshipFile;
+    public final long RequestValidity;
 
     private  String fileName = "config.cfg";
 
-    public ConnectionParam() throws IOException, ParseException {
+    public Configs() throws IOException, ParseException {
         FileReader reader = new FileReader(fileName);
         JSONParser parser = new JSONParser();
         JSONObject json = (JSONObject) parser.parse(reader);
@@ -39,10 +41,12 @@ public class ConnectionParam {
         DatagramServerAddress = (String) json.get("DatagramServerAddress");
         DatagramServerPort = (long) json.get("DatagramServerPort");
         MaxPacketLength = (long) json.get("MaxPacketLength");
+        FriendshipFile = (String) json.get("FriendshipFile");
+        RequestValidity = (long) json.get("RequestValidity");
         reader.close();
     }
 
-    public ConnectionParam(String fileName) throws IOException, ParseException {
+    public Configs(String fileName) throws IOException, ParseException {
         FileReader reader = new FileReader(fileName);
         JSONParser parser = new JSONParser();
         JSONObject json = (JSONObject) parser.parse(reader);
@@ -55,6 +59,8 @@ public class ConnectionParam {
         DatagramServerAddress = (String) json.get("DatagramServerAddress");
         DatagramServerPort = (long) json.get("DatagramServerPort");
         MaxPacketLength = (long) json.get("MaxPacketLength");
-
+        FriendshipFile = (String) json.get("FriendshipFile");
+        RequestValidity = (long) json.get("RequestValidity");
+        reader.close();
     }
 }

@@ -5,6 +5,7 @@ package marco.rcl.shared;
  */
 public interface Errors {
 
+    int CommandNotFound = -1;
     int noErrors = 0;
     int UserAlreadyRegistered = 1;
     int UsernameNotValid = 2;
@@ -13,5 +14,9 @@ public interface Errors {
     int TokenNotValid = 5;
     int UserNotLogged = 6;
     int AddressNotValid = 7;
-
+    int RequestNotValid = 8;
+    int ConfirmNotValid = 9;
+    int IgnoreNotValid = 10;
+    int UserNotValid = 11;
+    int UserOffline = 12;
 }

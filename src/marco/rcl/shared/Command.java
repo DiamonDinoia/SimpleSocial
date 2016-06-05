@@ -5,53 +5,13 @@ package marco.rcl.shared;
  */
 
 public class Command {
-    private final int command;
-    private final String name;
-    private final String password;
-    private final Token token;
-    private final String search;
-    private final String address;
-    private final int port;
-
-    public Command(String password, String name, int command) {
-        this.password = password;
-        this.name = name;
-        this.command = command;
-        this.token = null;
-        this.search = null;
-        this.address = null;
-        this.port = -1;
-    }
-
-    public Command(int command, String name, String password, Token token) {
-        this.command = command;
-        this.name = name;
-        this.password = password;
-        this.token = token;
-        this.search = null;
-        this.address = null;
-        this.port = -1;
-    }
-
-    public Command(int command, String name, String password, Token token, String search) {
-        this.command = command;
-        this.name = name;
-        this.password = password;
-        this.token = token;
-        this.search = search;
-        this.address = null;
-        this.port = -1;
-    }
-
-    public Command(int command, String name, String password, String address, int port) {
-        this.command = command;
-        this.name = name;
-        this.password = password;
-        this.token = null;
-        this.search = null;
-        this.address = address;
-        this.port = port;
-    }
+    private int command;
+    private String name;
+    private String password;
+    private Token token;
+    private String user;
+    private String address;
+    private int port;
 
     public String getAddress() {
         return address;
@@ -77,7 +37,7 @@ public class Command {
         return password;
     }
 
-    public String getSearch() {
-        return search;
+    public String getUser() {
+        return user;
     }
 }

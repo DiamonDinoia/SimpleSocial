@@ -10,6 +10,7 @@ public interface Commands {
     int SearchUser = 3;
     int FriendRequest = 4;
     int FriendConfirm = 5;
+    int FriendIgnore = 6;
     int FriendList = 6;
     int Logout = 7;
 

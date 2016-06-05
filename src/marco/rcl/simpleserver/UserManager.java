@@ -3,10 +3,11 @@ package marco.rcl.simpleserver;
 
 import marco.rcl.shared.*;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
+import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketAddress;
+import java.rmi.server.ExportException;
 import java.util.ArrayList;
 import java.util.concurrent.*;
 import java.util.logging.Logger;
@@ -24,10 +25,12 @@ class UserManager {
     private boolean manage = false;
     private boolean append = false;
     private KeepAliveManager keepAliveManager;
+    private FriendManager friendManager;
+
     /**
      * Constructor, creates a new Usermanager
      */
-    UserManager(ConnectionParam param) {
+    UserManager(Configs param) {
         // try to restore the previous session
         users = DiskManager.restoreFromDisk(userFilename);
         // fatal error if the restore fails with unknown error then exit
@@ -36,6 +39,7 @@ class UserManager {
         ex = Executors.newCachedThreadPool();
         // start the keep alive  manager in order to check the status of the users
         keepAliveManager = new KeepAliveManager(users,param,ex);
+        friendManager = new FriendManager(param);
     }
 
     /**
@@ -55,6 +59,27 @@ class UserManager {
     private synchronized void updateUserFile(User u){
         DiskManager.updateUserFile(u, userFilename, append);
         append = true;
+    }
+
+    /**
+     * this function checks the user status and return a confirm code or an error
+     * @param name name of the user
+     * @param password password of the user
+     * @param token token of the user
+     * @return confirm code or error
+     */
+    private int checkUser(String name,String password, Token token){
+        // the user must be registered
+        if (!users.containsKey(name)) return Errors.UserNotRegistered;
+        User u = users.get(name);
+        // checking user password
+        if (!u.getPassword().equals(password)) return Errors.PasswordNotValid;
+        // the user must be online
+        if (!u.isOnline()) return Errors.UserNotLogged;
+        // checking the token
+        if (token==null || !u.getToken().isValid() || !u.getToken().equals(token)) return Errors.TokenNotValid;
+        // no errors then
+        return Errors.noErrors;
     }
 
     /**
@@ -101,49 +126,96 @@ class UserManager {
         return new Response(u.getToken());
     }
 
+
     /**
      * function used to handle logout request from the user
      * @param name Username
-     * @param password user's password
      * @return server response, contains confirm message if the user is correctly registered, or an error message
      * if something went wrong
      */
-    private Response logout(String name, String password, Token token) {
-        // the user must be registered
-        if (!users.containsKey(name)) return new Response(Errors.UserNotRegistered);
-        // checking user password
-        if (!users.get(name).getPassword().equals(password)) return new Response(Errors.PasswordNotValid);
-        // checking the token
+    private Response logout(String name) {
         User u = users.get(name);
-        if (!u.getToken().isValid() || !u.getToken().equals(token)) return new Response(Errors.TokenNotValid);
         u.setOffLine();
         return new Response();
     }
 
     /**
      * function used to handle search request from the user
-     * @param name Username
-     * @param password user's password
      * @return server response, contains an array of users if the user is registered and loggedin, or an error message
      * if something went wrong
      */
-    private Response search(String name, String password, Token token, String searchUser) {
-        // the user must be registered
-        if (!users.containsKey(name)) return new Response(Errors.UserNotRegistered);
-        User u = users.get(name);
-        // checking user password
-        if (!u.getPassword().equals(password)) return new Response(Errors.PasswordNotValid);
-        // the user must be online
-        if (!u.isOnline()) return new Response(Errors.UserNotLogged);
-        // checking the token
-        if (!u.getToken().isValid() || !u.getToken().equals(token)) return new Response(Errors.TokenNotValid);
-        ArrayList<UserShared> result = new ArrayList<>();
+    private Response search(String searchUser) {
+        ArrayList<String> result = new ArrayList<>();
         users.forEach((key,user)-> {
             if (key.toLowerCase().contains(searchUser.toLowerCase()))
-                result.add(new UserShared(user.getName(),user.isOnline()));
+                result.add(user.getName());
         });
-        return new Response((UserShared[]) result.toArray());
+        return new Response((String[]) result.toArray());
     }
+
+
+
+    /**
+     * function used to get the (friend, status) list of the user "name"
+     * @param name the owner of the friendList
+     * @return the friend List or null if the user has no friends
+     */
+    private Response friendList(String name){
+        String[] friends = friendManager.getFriendList(name);
+        if (friends==null) return new Response();
+        ArrayList<UserShared> tmp = new ArrayList<>();
+        for (String friend : friends) {
+            tmp.add(new UserShared(friend,users.get(friend).isOnline()));
+        }
+        return new Response((UserShared[]) tmp.toArray());
+    }
+
+    /**
+     * This function tries to contact the receiver, if the connection is successful then send the request else returns
+     * an error
+     * @param sender the sender of the friend request
+     * @param receiver the receiver og the friend request
+     * @return confirm message or error
+     */
+    private Response addFriendRequest(String sender, String receiver){
+        try {
+            User u = users.get(receiver);
+            Socket socket = new Socket();
+            SocketAddress sa = new InetSocketAddress(u.getAddress(),u.getPort());
+            socket.connect(sa, (int) TimeUnit.MINUTES.toMillis(1));
+            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+            writer.write(sender + "\n");
+            writer.flush();
+            writer.close();
+            socket.close();
+            log.info("request correclty sent");
+            return new Response(friendManager.addFriendRequest(receiver,sender));
+        } catch (Exception e) {
+            e.printStackTrace();
+            log.severe("failde connecction to the user " + receiver);
+            return new Response(Errors.UserOffline);
+        }
+    }
+
+    /**
+     * this function confirms the friend request if possible or returns an error
+     * @param receiver receiver og the request
+     * @param sender sender of the request
+     * @return confirm message or error
+     */
+    private Response confirmRequest(String receiver, String sender){
+        return new Response(friendManager.confirmFriendRequest(receiver,sender));
+    }
+    /**
+     * this function ignores the friend request if possible or returns an error
+     * @param receiver receiver og the request
+     * @param sender sender of the request
+     * @return confirm message or error
+     */
+    private Response ignoreRequest(String receiver, String sender){
+        return new Response(friendManager.ignoreFriendRequest(receiver,sender));
+    }
+
 
     /**
      * this function is used to decode the command from the user and generate the correct response
@@ -153,27 +225,23 @@ class UserManager {
     private Response decodeCommand(Command command){
         String name = command.getName();
         String password = command.getPassword();
-        String address = command.getAddress();
-        int port = command.getPort();
         Token token = command.getToken();
-
         // the name and the password must either be not null
         if (name==null) return new Response(Errors.UsernameNotValid);
         if (password==null) return new Response(Errors.PasswordNotValid);
-        // name are not case sensitive
+        int code = command.getCommand();
+        // names are not case sensitive
         name = name.toUpperCase();
-        switch (command.getCommand()){
-            case Commands.Register:
-                return register(name,password,address,port);
-            case Commands.Login:
-                return login(name,password,address,port);
-            case Commands.Logout:
-                return logout(name,password,token);
-            case Commands.SearchUser:
-                return search(name,password,token,command.getSearch());
-            default: return null;
-
-        }
+        if (code == Commands.Register) return register(name,password,command.getAddress(),command.getPort());
+        if (code == Commands.Login) return login(name,password,command.getAddress(),command.getPort());
+        if (checkUser(name, password, token) != Errors.noErrors) return new Response(checkUser(name,password,token));
+        if (code == Commands.Logout) return logout(name);
+        String friend = command.getUser();
+        if (friend==null) return new Response(Errors.UserNotValid);
+        if (code == Commands.SearchUser) return search(name);
+        if (code == Commands.FriendList) return friendList(name);
+        // sono qui
+        return new Response(Errors.CommandNotFound);
     }
 
     /**
