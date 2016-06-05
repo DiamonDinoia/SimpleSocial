@@ -14,6 +14,7 @@ public interface Commands {
     int FriendList = 7;
     int Logout = 8;
     int Publish = 9;
+    int PendingRequests = 10;
 
 }
 

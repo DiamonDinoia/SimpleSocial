@@ -15,7 +15,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.logging.Logger;
 
 /**
- * This class is used to manager the TCP connection with the clients
+ * This class is used to manager the TCP connections with the clients
  */
 public class ConnectionManager {
     private ServerSocket serverSocket;
@@ -35,31 +35,39 @@ public class ConnectionManager {
             executorService = ex;
             this.userManager = userManager;
         } catch (IOException e) {
+            // if something went wrong just close if open and abort
             log.severe("Failed creation serverSocket " + e.toString());
             e.printStackTrace();
+            try {serverSocket.close();} catch (Exception ignored) {}
             throw new RuntimeException(e);
         }
+        log.info("Connection Manager correctly started");
     }
 
-
+    /**
+     * this function makes the connection to accept and dispatch new clients
+     */
     public void startManaging() {
         if (manage) return;
         manage = true;
         executorService.submit(() -> {
-            try {
-                while (manage) {
+            while (manage) {
+                try {
+                    // accept a new client and serve him
                     Socket socket = serverSocket.accept();
                     executorService.submit(() -> responder(socket));
                     log.info("client accepted");
-                }
-            } catch (SocketException e) {
+                    // if an error occur during accept might be a client problem, so try again
+                } catch (SocketException e) {
                 if (manage) {
                     log.severe("Failed dispatcher client " + e.toString());
                     e.printStackTrace();
+                // if the socked is closed probably the server is shutting down
                 } else log.info("stopped dispatcher connections, serverSocket closed");
-            } catch (IOException e) {
+                } catch (IOException e) {
                 log.severe("Failed dispatcher client " + e.toString());
                 e.printStackTrace();
+                }
             }
         });
     }
@@ -75,11 +83,14 @@ public class ConnectionManager {
         ObjectOutputStream out = null;
         try {
             in = new ObjectInputStream(socket.getInputStream());
+            // receive the command
             command = (Command) in.readObject();
+            // decode it
             Response response = userManager.decodeCommand(command);
+            // send the response to the client
             out = new ObjectOutputStream(socket.getOutputStream());
-            log.info("user " + command.getName() + "correctly handled");
             out.writeObject(response);
+            log.info("user " + command.getName() + "correctly handled");
             in.close();
             out.close();
             // simply logs the error, this is not a fatal one
@@ -108,6 +119,7 @@ public class ConnectionManager {
      */
     public void close(){
         try {
+            stopManaging();
             serverSocket.close();
             log.info("closing connection manager");
         } catch (IOException e) {

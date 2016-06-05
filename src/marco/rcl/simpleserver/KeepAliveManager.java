@@ -140,7 +140,6 @@ public class KeepAliveManager {
                     multicast.send(keepAlivePacket);
                     // wait 10 seconds
                     Thread.sleep(TimeUnit.SECONDS.toMillis(10));
-
                     users.forEach((name,value) -> {
                         if (!onlineUsers.contains(name)) value.setOffLine();
                     });

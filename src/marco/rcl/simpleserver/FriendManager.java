@@ -8,9 +8,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Logger;
 
 /**
- * Created by marko on 04/06/2016.
+ * this class manages friendships
  */
 
 public class FriendManager {
@@ -22,6 +23,7 @@ public class FriendManager {
     private String fileName = null;
     private ConcurrentHashMap<String,HashMap<String,Long>> pendingRequests;
     private ConcurrentHashMap<String,ArrayList<String>> friendships;
+    private final static Logger log = Server.getLog();
 
     /**
      * constrictor, initializes data structure and restore the status from the disk
@@ -29,12 +31,15 @@ public class FriendManager {
      */
     public FriendManager(Configs param) {
         friendships = DiskManager.RestoreFriendList(param.FriendshipFile);
+        if (friendships == null){
+            log.severe("friendships restore failed");
+            throw new RuntimeException("problems during friendships restore");
+        }
         this.pendingRequests = new ConcurrentHashMap<>();
         this.requestValidity = param.RequestValidity;
-        if (friendships == null)
-            throw new RuntimeException("problems during frienship restore");
         fileName = param.FriendshipFile;
         backupInterval = param.BackupInterval;
+        log.info("friend manager correctly started");
     }
 
     /**
@@ -46,9 +51,12 @@ public class FriendManager {
      * @return Error code or Confirm
      */
     public int addFriendRequest(String receiver, String sender){
+        // if the sender and the receiver are the same return error
         if (receiver.equals(sender)) return Errors.RequestNotValid;
+        // if they are already friends return error
         if (friendships.containsKey(receiver) && friendships.get(receiver).contains(sender))
             return Errors.RequestNotValid;
+        // else add the friend request
         if (pendingRequests.containsKey(receiver)){
             pendingRequests.get(receiver).put(sender, System.currentTimeMillis());
         } else {
@@ -56,6 +64,7 @@ public class FriendManager {
             tmp.put(sender,System.currentTimeMillis());
             pendingRequests.put(receiver,tmp);
         }
+        log.info("added a friend request");
         return Errors.noErrors;
     }
 
@@ -65,13 +74,14 @@ public class FriendManager {
      * @param u2 the new friend of u1
      */
     private void addFriendship(String u1, String u2){
-        if (friendships.contains(u1)){
+        if (friendships.containsKey(u1)){
             friendships.get(u1).add(u2);
         } else {
             ArrayList<String> tmp = new ArrayList<>();
             tmp.add(u2);
             friendships.put(u1,tmp);
         }
+        log.info("added a friendship");
     }
 
     /**
@@ -83,6 +93,7 @@ public class FriendManager {
         HashMap<String,Long> tmp = pendingRequests.get(receiver);
         tmp.remove(sender);
         if (tmp.isEmpty()) pendingRequests.remove(receiver);
+        log.info("removed a pending request");
     }
 
     /**
@@ -98,8 +109,10 @@ public class FriendManager {
             addFriendship(receiver,sender);
             addFriendship(sender,receiver);
             removePendingRequest(receiver,sender);
+            log.info("pending request confirmed");
             return Errors.noErrors;
         }
+        log.info("impossible to confirm a pending request");
         return Errors.ConfirmNotValid;
     }
 
@@ -111,17 +124,18 @@ public class FriendManager {
      * @return confirm, otherwise an error
      */
     public int ignoreFriendRequest(String receiver, String sender){
-        // if the receiver has requests and one of them is from the sender then confirm else return error
+        // if the receiver has requests and one of them is from the sender then ignore else return error
         if (pendingRequests.containsKey(receiver) && pendingRequests.get(receiver).containsKey(sender)){
             removePendingRequest(receiver,sender);
+            log.info("pending request correctly ignored");
             return Errors.noErrors;
         }
+        log.info("pending request not valid");
         return Errors.IgnoreNotValid;
     }
 
     /**
-     * this function deletes all the expired requests, written in functional checks all'timestamps and if there's
-     * someone expired then deletes
+     * this function deletes all the expired requests, checks all timestamps and if there's someone expired then deletes
      */
     public void removeExpiredRequests(){
         pendingRequests.values().removeIf(
@@ -130,6 +144,7 @@ public class FriendManager {
                             ((System.currentTimeMillis() - timestamp) > requestValidity));
                     return requestHashMap.isEmpty();
                 });
+        log.info("expired requests removed");
     }
 
     /**
@@ -138,6 +153,7 @@ public class FriendManager {
      * @return null or the friendList
      */
     public String[] getFriendList(String name){
+        log.info("asked a friendlist by " + name);
         return (String[]) friendships.get(name).toArray();
     }
 
@@ -147,6 +163,7 @@ public class FriendManager {
      * @return null or pending request array
      */
     public String[] getPendingRequests(String name){
+        log.info("asked for pending requests " + name);
         if (!pendingRequests.containsKey(name)) return null;
         pendingRequests.get(name).values().removeIf( (timestamp) ->
             System.currentTimeMillis() - timestamp > requestValidity);
@@ -160,6 +177,7 @@ public class FriendManager {
     public void startRemovingExpiredRequests() throws InterruptedException {
         if (remove) return;
         remove = true;
+        log.info("started removing expired requests");
         while (remove) {
             removeExpiredRequests();
             Thread.sleep(requestValidity / 2);
@@ -171,6 +189,7 @@ public class FriendManager {
      */
     public void stopRemovingExpiredRequests(){
         remove = false;
+        log.info("stopped removing expired requests");
     }
 
     /**
@@ -179,10 +198,14 @@ public class FriendManager {
      */
     public void startDumpingFriendships() throws InterruptedException {
         if (dumping) return;
+        log.info("start performing backups");
+        dumping = true;
         while (dumping){
             if(DiskManager.dumpFriendList(friendships,fileName)){
+                log.severe("failed performing a backup");
                 throw new RuntimeException("failed saving friendships exiting");
             }
+            log.info("backup complete");
             Thread.sleep(backupInterval);
         }
     }
@@ -191,6 +214,7 @@ public class FriendManager {
      * this function tells to the friendManager to stop backing-up
      */
     public void stopDumpingFriendships(){
+        log.info("stopped backup");
         dumping=false;
     }
 }

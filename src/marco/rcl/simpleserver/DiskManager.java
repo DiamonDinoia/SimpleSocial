@@ -8,14 +8,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
 /**
- * Created by marko on 01/06/2016.
+ * this is a class of static methods that simply save and restore the server's status on the disk
  */
 public class DiskManager {
 
     private static Logger log = Server.getLog();
 
     /**
-     *
+     * restores the hashMap from the disk
      * @param userFilename name and path of the file containing all the registered users
      * @return ConcurrentHashMap if the function correctly restores the users from the file, null if it fails
      */
@@ -33,10 +33,10 @@ public class DiskManager {
             // this is no the best way to read the entire file, the most correct way is to save on the file some
             // metadata (such as the last saved user or the number of the users) in order to check if the file
             // has been truncated by some error
-            do {
+            while (true){
                 user = (User) in.readObject();
                 registeredUsers.put(user.getName(),user);
-            } while (true);
+            }
         } catch (EOFException e ){
             // reached EOF, checking if it is an error
             // at least I check if the file is empty is an error
@@ -95,7 +95,7 @@ public class DiskManager {
                 out = new ObjectOutputStream(fo);
                 out.writeObject(u);
             }
-            log.info("udate terminated");
+            log.info("update terminated");
         // if there is an error, modifies can't be saved, terminate and start a new session
         } catch (FileNotFoundException e) {
             log.severe("userFile not found terminating " + e.toString());
@@ -201,7 +201,10 @@ public class DiskManager {
     }
 }
 
-
+/**
+ * when java serialize an object on a file writes an header, that makes impossible append an object at the end of a file
+ * overriding the writeStreamHeader and forcing it to do nothing you can append an object to the end of the file
+ */
 class AppendingObjectOutputStream extends ObjectOutputStream {
 
     public AppendingObjectOutputStream(OutputStream out) throws IOException {

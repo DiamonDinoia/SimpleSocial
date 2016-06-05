@@ -25,14 +25,17 @@ class UserManager {
     private FriendManager friendManager;
     private CallbackManager callbackManager;
 
-    public UserManager(ExecutorService ex, FriendManager friendManager, CallbackManager callbackManager) {
+    public void setCallbackManager(CallbackManager callbackManager) {
+        this.callbackManager = callbackManager;
+    }
+
+    public UserManager(ExecutorService ex, FriendManager friendManager) {
         // try to restore the previous session
         users = DiskManager.restoreFromDisk(userFilename);
         // fatal error if the restore fails with unknown error then exit
         if (users == null) throw new RuntimeException("problems restoring users");
         this.ex = ex;
         this.friendManager = friendManager;
-        this.callbackManager = callbackManager;
     }
 
     /**
@@ -246,6 +249,15 @@ class UserManager {
     }
 
     /**
+     * this function return the pending list of the user called name
+     * @param name owner of the pending request list
+     * @return null or pending list
+     */
+    private Response getPendingRequests(String name){
+        return new Response(friendManager.getPendingRequests(name));
+    }
+
+    /**
      * this function is used to decode the command from the user and generate the correct response
      * @param command User's request
      * @return error message if the command is invalid or the confirm message
@@ -272,6 +284,7 @@ class UserManager {
         if (code == Commands.FriendConfirm) return confirmRequest(name,friend);
         if (code == Commands.FriendIgnore) return ignoreRequest(name,friend);
         if (code == Commands.Publish) return publish(name,command.getContent());
+        if (code == Commands.PendingRequests) return getPendingRequests(name);
         return new Response(Errors.CommandNotFound);
     }
 
