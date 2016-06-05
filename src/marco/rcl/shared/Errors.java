@@ -19,4 +19,5 @@ public interface Errors {
     int IgnoreNotValid = 10;
     int UserNotValid = 11;
     int UserOffline = 12;
+    int ContentNotValid = 13;
 }

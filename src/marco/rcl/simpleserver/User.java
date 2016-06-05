@@ -1,6 +1,7 @@
 package marco.rcl.simpleserver;
 
 
+import marco.rcl.shared.ClientCallback;
 import marco.rcl.shared.Token;
 
 import java.io.Serializable;
@@ -10,7 +11,7 @@ import java.io.Serializable;
  */
 public class User implements Serializable{
 
-    private final long serialVersionUID = 1L;
+    private final static long serialVersionUID = 1L;
 
     private final String name;
     private final String password;
@@ -18,6 +19,7 @@ public class User implements Serializable{
     transient private boolean online;
     transient private String address;
     transient private int port;
+    transient private ClientCallback callback;
 
     public User(String name, String password, String address, int port) {
         this.name = name;
@@ -28,13 +30,13 @@ public class User implements Serializable{
         this.port = port;
     }
 
-    public User(String name, String password) {
-        this.name = name;
-        this.password = password;
-        this.token = new Token();
-        this.online = false;
-        this.address = null;
-        this.port = -1;
+    public ClientCallback getCallback() {
+        return callback;
+    }
+
+    public User setCallback(ClientCallback callback) {
+        this.callback = callback;
+        return this;
     }
 
     public boolean isOnline() {

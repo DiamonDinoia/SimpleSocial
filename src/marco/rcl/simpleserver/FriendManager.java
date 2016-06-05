@@ -16,7 +16,10 @@ import java.util.concurrent.ConcurrentHashMap;
 public class FriendManager {
 
     private final long requestValidity;
-
+    private boolean remove = false;
+    private boolean dumping = false;
+    private long backupInterval;
+    private String fileName = null;
     private ConcurrentHashMap<String,HashMap<String,Long>> pendingRequests;
     private ConcurrentHashMap<String,ArrayList<String>> friendships;
 
@@ -30,6 +33,8 @@ public class FriendManager {
         this.requestValidity = param.RequestValidity;
         if (friendships == null)
             throw new RuntimeException("problems during frienship restore");
+        fileName = param.FriendshipFile;
+        backupInterval = param.BackupInterval;
     }
 
     /**
@@ -148,4 +153,44 @@ public class FriendManager {
         return (String[]) Collections.list(pendingRequests.keys()).toArray();
     }
 
+    /**
+     * this functions initiates the friend manager to compact the pending request list
+     * @throws InterruptedException in case of interruption
+     */
+    public void startRemovingExpiredRequests() throws InterruptedException {
+        if (remove) return;
+        remove = true;
+        while (remove) {
+            removeExpiredRequests();
+            Thread.sleep(requestValidity / 2);
+        }
+    }
+
+    /**
+     * this function tells to the friend manager to stop removing the pending request list
+     */
+    public void stopRemovingExpiredRequests(){
+        remove = false;
+    }
+
+    /**
+     * this function tells to the friendManager to start backing-up the friendlist
+     * @throws InterruptedException
+     */
+    public void startDumpingFriendships() throws InterruptedException {
+        if (dumping) return;
+        while (dumping){
+            if(DiskManager.dumpFriendList(friendships,fileName)){
+                throw new RuntimeException("failed saving friendships exiting");
+            }
+            Thread.sleep(backupInterval);
+        }
+    }
+
+    /**
+     * this function tells to the friendManager to stop backing-up
+     */
+    public void stopDumpingFriendships(){
+        dumping=false;
+    }
 }

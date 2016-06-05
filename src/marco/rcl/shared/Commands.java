@@ -11,8 +11,9 @@ public interface Commands {
     int FriendRequest = 4;
     int FriendConfirm = 5;
     int FriendIgnore = 6;
-    int FriendList = 6;
-    int Logout = 7;
+    int FriendList = 7;
+    int Logout = 8;
+    int Publish = 9;
 
 }
 

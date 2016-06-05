@@ -3,6 +3,7 @@ package marco.rcl.simpleserver;
 import java.io.*;
 import java.nio.file.*;
 import java.util.ArrayList;
+import java.util.EventListener;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
@@ -34,7 +35,7 @@ public class DiskManager {
             // has been truncated by some error
             do {
                 user = (User) in.readObject();
-                registeredUsers.put(user.getName(), new User(user.getName(), user.getPassword()));
+                registeredUsers.put(user.getName(),user);
             } while (true);
         } catch (EOFException e ){
             // reached EOF, checking if it is an error
@@ -138,8 +139,8 @@ public class DiskManager {
             File f = new File(fileName);
             friends = new ConcurrentHashMap<>();
             try {
-                f.createNewFile();
-                log.info("file correctly created");
+                if (f.createNewFile()) log.info("file correctly created");
+                    else throw new IOException();
             } catch (IOException e1) {
                 log.severe("Impossible create friend file " + e1.toString() );
                 e.printStackTrace();
@@ -170,7 +171,7 @@ public class DiskManager {
      * @param fileName file in which dump the friend list
      * @return true in case of error false otherwise
      */
-    public boolean dumpFriendList(ConcurrentHashMap<String,ArrayList<String>> friendList, String fileName ){
+    public static boolean dumpFriendList(ConcurrentHashMap<String,ArrayList<String>> friendList, String fileName ){
         FileOutputStream fo = null;
         ObjectOutputStream out = null;
         log.info("dump started");

@@ -25,7 +25,9 @@ public class Configs {
     public final long MaxPacketLength;
     public final String FriendshipFile;
     public final long RequestValidity;
-
+    public final long BackupInterval;
+    public final String CallbackFileName;
+    public final String PendingContents;
     private  String fileName = "config.cfg";
 
     public Configs() throws IOException, ParseException {
@@ -43,6 +45,9 @@ public class Configs {
         MaxPacketLength = (long) json.get("MaxPacketLength");
         FriendshipFile = (String) json.get("FriendshipFile");
         RequestValidity = (long) json.get("RequestValidity");
+        BackupInterval = (long) json.get("BackupInterval");
+        CallbackFileName = (String) json.get("CallbackFileName");
+        PendingContents = (String) json.get("PendingContents");
         reader.close();
     }
 
@@ -61,6 +66,9 @@ public class Configs {
         MaxPacketLength = (long) json.get("MaxPacketLength");
         FriendshipFile = (String) json.get("FriendshipFile");
         RequestValidity = (long) json.get("RequestValidity");
+        BackupInterval = (long) json.get("BackupInterval");
+        CallbackFileName = (String) json.get("CallbackFileName");
+        PendingContents = (String) json.get("PendingContents");
         reader.close();
     }
 }

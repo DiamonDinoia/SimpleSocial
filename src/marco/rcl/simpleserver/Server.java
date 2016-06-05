@@ -21,8 +21,6 @@ public class Server {
             e.printStackTrace();
             System.exit(1);
         }
-        ConnectionManager cm = new ConnectionManager(configs);
-        cm.startManagingConnections();
 
 
 

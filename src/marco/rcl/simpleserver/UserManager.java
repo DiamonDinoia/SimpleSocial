@@ -20,45 +20,57 @@ class UserManager {
     private static final Logger log = Server.getLog();
     private ConcurrentHashMap<String,User> users;
     private final static String userFilename = "./ServerData/Users.ser";
-    private LinkedBlockingQueue<Socket> connections;
     private ExecutorService ex;
-    private boolean manage = false;
     private boolean append = false;
-    private KeepAliveManager keepAliveManager;
     private FriendManager friendManager;
+    private CallbackManager callbackManager;
 
-    /**
-     * Constructor, creates a new Usermanager
-     */
-    UserManager(Configs param) {
+    public UserManager(ExecutorService ex, FriendManager friendManager, CallbackManager callbackManager) {
         // try to restore the previous session
         users = DiskManager.restoreFromDisk(userFilename);
         // fatal error if the restore fails with unknown error then exit
         if (users == null) throw new RuntimeException("problems restoring users");
-        connections = new LinkedBlockingQueue<>();
-        ex = Executors.newCachedThreadPool();
-        // start the keep alive  manager in order to check the status of the users
-        keepAliveManager = new KeepAliveManager(users,param,ex);
-        friendManager = new FriendManager(param);
-    }
-
-    /**
-     * @param socket represents che connection with the user
-     * @throws InterruptedException
-     */
-    void submit(Socket socket) throws InterruptedException{
-        connections.put(socket);
+        this.ex = ex;
+        this.friendManager = friendManager;
+        this.callbackManager = callbackManager;
     }
 
     /**
      * function used to perform asynchronous updates to de disk, is synchronized because can be called by more threads
      * at once.
-     * TODO: use a dispatch list in order to write more object at the time, and check return value
+     * TODO: use a dispatch list in order to write more object at the time
      * @param u the new user to be saved on the disk
      */
     private synchronized void updateUserFile(User u){
-        DiskManager.updateUserFile(u, userFilename, append);
+        if (DiskManager.updateUserFile(u, userFilename, append)){
+            log.severe("failed storing users aborting");
+            throw new RuntimeException("problems in storing user");
+        }
         append = true;
+    }
+
+    /**
+     * if the user is correctly registered and logged in set his callback else returns error
+     * @param c user callback
+     * @param name user name
+     * @param password user password
+     * @param token user token
+     * @return confirm message or error code
+     */
+    public int setCallback(ClientCallback c, String name, String password, Token token){
+        int check = checkUser(name, password, token);
+        if (check == Errors.noErrors) users.get(name).setCallback(c);
+        return check;
+    }
+
+    /**
+     * if the user is correctly registered and logged in returns his callback
+     * @param name user name
+     * @return usercallback or null in case of error
+     */
+    public ClientCallback getCallback(String name){
+        if (users.get(name).isOnline()) return users.get(name).getCallback();
+        return null;
     }
 
     /**
@@ -68,12 +80,14 @@ class UserManager {
      * @param token token of the user
      * @return confirm code or error
      */
-    private int checkUser(String name,String password, Token token){
+    public int checkUser(String name,String password, Token token){
+        // username must not be null
+        if (name==null) return Errors.UsernameNotValid;
         // the user must be registered
         if (!users.containsKey(name)) return Errors.UserNotRegistered;
         User u = users.get(name);
         // checking user password
-        if (!u.getPassword().equals(password)) return Errors.PasswordNotValid;
+        if (password==null || !u.getPassword().equals(password)) return Errors.PasswordNotValid;
         // the user must be online
         if (!u.isOnline()) return Errors.UserNotLogged;
         // checking the token
@@ -119,6 +133,7 @@ class UserManager {
         if (!users.get(name).getPassword().equals(password)) return new Response(Errors.PasswordNotValid);
         // if the user is registered the update his status
         User u = users.get(name)
+                    .updateToken()
                     .setOnline()
                     .setAddress(address)
                     .setPort(port);
@@ -180,6 +195,7 @@ class UserManager {
     private Response addFriendRequest(String sender, String receiver){
         try {
             User u = users.get(receiver);
+            if (!u.isOnline()) return new Response(Errors.UserOffline);
             Socket socket = new Socket();
             SocketAddress sa = new InetSocketAddress(u.getAddress(),u.getPort());
             socket.connect(sa, (int) TimeUnit.MINUTES.toMillis(1));
@@ -188,11 +204,11 @@ class UserManager {
             writer.flush();
             writer.close();
             socket.close();
-            log.info("request correclty sent");
+            log.info("request correctly sent");
             return new Response(friendManager.addFriendRequest(receiver,sender));
         } catch (Exception e) {
             e.printStackTrace();
-            log.severe("failde connecction to the user " + receiver);
+            log.severe("failed the connection to the user " + receiver);
             return new Response(Errors.UserOffline);
         }
     }
@@ -216,13 +232,25 @@ class UserManager {
         return new Response(friendManager.ignoreFriendRequest(receiver,sender));
     }
 
+    /**
+     * this function send the content to callback manager, this metho can't fail because all the controls are done
+     * before
+     * @param name name of the publisher
+     * @param content content shared by the publisher
+     * @return confirm message
+     */
+    private Response publish(String name, String content){
+        if (content==null) return new Response(Errors.ContentNotValid);
+        callbackManager.publish(name, content);
+        return new Response(Errors.noErrors);
+    }
 
     /**
      * this function is used to decode the command from the user and generate the correct response
      * @param command User's request
      * @return error message if the command is invalid or the confirm message
      */
-    private Response decodeCommand(Command command){
+    public Response decodeCommand(Command command){
         String name = command.getName();
         String password = command.getPassword();
         Token token = command.getToken();
@@ -240,53 +268,11 @@ class UserManager {
         if (friend==null) return new Response(Errors.UserNotValid);
         if (code == Commands.SearchUser) return search(name);
         if (code == Commands.FriendList) return friendList(name);
-        // sono qui
+        if (code == Commands.FriendRequest) return addFriendRequest(name,friend);
+        if (code == Commands.FriendConfirm) return confirmRequest(name,friend);
+        if (code == Commands.FriendIgnore) return ignoreRequest(name,friend);
+        if (code == Commands.Publish) return publish(name,command.getContent());
         return new Response(Errors.CommandNotFound);
     }
 
-    /**
-     * this function is used to perform async communications with the users
-     * @param socket the connection with the user
-     */
-    private void responder(Socket socket){
-        // it is all in one try block because is not important which one fails, the user can always try another time
-        Command command = null;
-        try {
-            ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
-            command = (Command) in.readObject();
-            Response response = decodeCommand(command);
-            ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
-            log.info("user " + command.getName() + "correctly handled");
-            out.writeObject(response);
-        // simply logs the error, this is not a fatal one
-        } catch (IOException | ClassNotFoundException e) {
-            log.severe("user " + (command!=null ? command.getName() : "" ) + "not correctly handled " + e.toString() );
-            e.printStackTrace();
-        // cleanup and return
-        } finally {
-            try {socket.close();} catch (IOException ignored) {}
-        }
-    }
-
-    /**
-     * tells the UserManager to start working, and performing async dispatching
-     */
-    void startManaging() {
-        if (manage) return;
-        manage=true;
-        ex.submit(() -> {
-            try {
-                // while not interrupted
-                while (manage){
-                    Socket socket = connections.take();
-                    ex.submit(() -> responder(socket));
-                }
-                // else terminate
-            } catch (InterruptedException e) {
-                log.info("UserManager interrupted, exiting...");
-                e.printStackTrace();
-            }
-        });
-        keepAliveManager.startUpdatingStatus();
-    }
 }
