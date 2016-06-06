@@ -1,19 +1,24 @@
 package marco.rcl.shared;
 
+import java.io.Serializable;
+
 /**
  * Support class used to model commands
  */
 
-public class Command {
+public class Command implements Serializable {
+
+    private final static long serialVersionUID = 1L;
+
     private int command;
     private String name;
     private String password;
     private Token token = null;
     private String user = null;
     private String address = null;
-
     private String content = null;
     private int port = -1;
+
 
     public Command(int command, String name, String password) {
         this.command = command;

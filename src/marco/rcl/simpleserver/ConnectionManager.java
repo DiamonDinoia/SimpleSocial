@@ -5,6 +5,7 @@ import marco.rcl.shared.Configs;
 import marco.rcl.shared.Response;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
@@ -41,7 +42,7 @@ public class ConnectionManager {
             try {serverSocket.close();} catch (Exception ignored) {}
             throw new RuntimeException(e);
         }
-        log.info("Connection Manager correctly started");
+        log.info("TCPHandler Manager correctly started");
     }
 
     /**
@@ -58,7 +59,7 @@ public class ConnectionManager {
                     executorService.submit(() -> responder(socket));
                     log.info("client accepted");
                     // if an error occur during accept might be a client problem, so try again
-                } catch (SocketException e) {
+                }catch (SocketException e) {
                 if (manage) {
                     log.severe("Failed dispatcher client " + e.toString());
                     e.printStackTrace();
@@ -90,7 +91,8 @@ public class ConnectionManager {
             // send the response to the client
             out = new ObjectOutputStream(socket.getOutputStream());
             out.writeObject(response);
-            log.info("user " + command.getName() + "correctly handled");
+            out.flush();
+            log.info("user " + command.getName() + " correctly handled");
             in.close();
             out.close();
             // simply logs the error, this is not a fatal one

@@ -25,17 +25,32 @@ class UserManager {
     private FriendManager friendManager;
     private CallbackManager callbackManager;
 
-    public void setCallbackManager(CallbackManager callbackManager) {
-        this.callbackManager = callbackManager;
-    }
 
     public UserManager(ExecutorService ex, FriendManager friendManager) {
         // try to restore the previous session
         users = DiskManager.restoreFromDisk(userFilename);
         // fatal error if the restore fails with unknown error then exit
-        if (users == null) throw new RuntimeException("problems restoring users");
+        if (users == null) {
+            log.severe("problems starting UserManager");
+            throw new RuntimeException("problems restoring users");
+        }
         this.ex = ex;
         this.friendManager = friendManager;
+        log.info("userManager correctly started");
+    }
+
+    /**
+     * create a link between CallbackManager and UserManager
+     * @param callbackManager the Callback Manager
+     */
+
+    public UserManager setCallbackManager(CallbackManager callbackManager) {
+        this.callbackManager = callbackManager;
+        return this;
+    }
+
+    public ConcurrentHashMap<String, User> getUsers() {
+        return users;
     }
 
     /**
@@ -46,7 +61,7 @@ class UserManager {
      */
     private synchronized void updateUserFile(User u){
         if (DiskManager.updateUserFile(u, userFilename, append)){
-            log.severe("failed storing users aborting");
+            log.severe("failed storing users, aborting");
             throw new RuntimeException("problems in storing user");
         }
         append = true;
@@ -69,7 +84,7 @@ class UserManager {
     /**
      * if the user is correctly registered and logged in returns his callback
      * @param name user name
-     * @return usercallback or null in case of error
+     * @return user callback or null in case of error
      */
     public ClientCallback getCallback(String name){
         if (users.get(name).isOnline()) return users.get(name).getCallback();
@@ -168,6 +183,7 @@ class UserManager {
             if (key.toLowerCase().contains(searchUser.toLowerCase()))
                 result.add(user.getName());
         });
+        if (result.size()==0) return new Response();
         return new Response((String[]) result.toArray());
     }
 
@@ -196,22 +212,22 @@ class UserManager {
      * @return confirm message or error
      */
     private Response addFriendRequest(String sender, String receiver){
-        try {
+            BufferedWriter writer = null;
+        try (Socket socket = new Socket()){
             User u = users.get(receiver);
             if (!u.isOnline()) return new Response(Errors.UserOffline);
-            Socket socket = new Socket();
             SocketAddress sa = new InetSocketAddress(u.getAddress(),u.getPort());
             socket.connect(sa, (int) TimeUnit.MINUTES.toMillis(1));
-            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+            writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
             writer.write(sender + "\n");
             writer.flush();
             writer.close();
-            socket.close();
             log.info("request correctly sent");
             return new Response(friendManager.addFriendRequest(receiver,sender));
         } catch (Exception e) {
             e.printStackTrace();
-            log.severe("failed the connection to the user " + receiver);
+            if (writer!=null) try {writer.close();} catch (IOException ignored) {}
+            log.severe("failed the connection to the user " + receiver + " " + e.toString());
             return new Response(Errors.UserOffline);
         }
     }
@@ -266,6 +282,7 @@ class UserManager {
         String name = command.getName();
         String password = command.getPassword();
         Token token = command.getToken();
+        log.info("received a command");
         // the name and the password must either be not null
         if (name==null) return new Response(Errors.UsernameNotValid);
         if (password==null) return new Response(Errors.PasswordNotValid);
@@ -278,7 +295,7 @@ class UserManager {
         if (code == Commands.Logout) return logout(name);
         String friend = command.getUser();
         if (friend==null) return new Response(Errors.UserNotValid);
-        if (code == Commands.SearchUser) return search(name);
+        if (code == Commands.SearchUser) return search(friend);
         if (code == Commands.FriendList) return friendList(name);
         if (code == Commands.FriendRequest) return addFriendRequest(name,friend);
         if (code == Commands.FriendConfirm) return confirmRequest(name,friend);

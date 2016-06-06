@@ -1,9 +1,13 @@
 package marco.rcl.shared;
 
+import java.io.Serializable;
+
 /**
  * Created by Marco on 31/05/16.
  */
-public class Response {
+public class Response implements Serializable {
+
+    private final static long serialVersionUID = 1L;
 
     private int error = Errors.noErrors;
     private Token token = null;

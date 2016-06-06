@@ -24,10 +24,6 @@ public class KeepAliveManager {
     private final static Logger log = Server.getLog();
     private boolean computing = false;
     private DatagramSocket server;
-    private boolean receiving = false;
-    private int threadsNumber = 0;
-    private long maxPacketLength = 96;
-    private int receivingBufferSize;
     private ConcurrentSkipListSet<String> onlineUsers;
 
     private boolean[] flags = new boolean[512];
@@ -52,14 +48,12 @@ public class KeepAliveManager {
             server = new DatagramSocket((int) param.DatagramServerPort,
                     InetAddress.getByName(param.DatagramServerAddress));
             server.setReuseAddress(true);
-            receivingBufferSize = server.getReceiveBufferSize();
         } catch (IOException e) {
             log.severe("Impossible to start KeepAliveManager " + e.toString());
             e.printStackTrace();
             throw new RuntimeException(e);
         }
         log.info("KeepAliveManager correctly started");
-        maxPacketLength = param.MaxPacketLength;
         onlineUsers = new ConcurrentSkipListSet<>();
     }
 
@@ -67,8 +61,8 @@ public class KeepAliveManager {
      * function used to terminate the process
      */
     public void stopUpdatingStatus(){
-        receiving = false;
         computing = false;
+        log.info("keep alive stopped updating status");
     }
 
     /**
@@ -77,21 +71,26 @@ public class KeepAliveManager {
     public void close(){
         this.server.close();
         this.multicast.close();
+        log.info("keep alive closed connections");
     }
 
     /**
      * function called in order to receive datagram packet, checks if the response is arrived in time and then
      * updates the list
      */
-    private void receivingTask(int index){
+    private void receivingTask(){
         DatagramPacket dp = new DatagramPacket(new byte[96],96);
             try {
-                while (receiving && flags[index]){
+                while (computing){
                     server.receive(dp);
                     String[] message = KeepAlive.decodeMessage(dp.getData());
-                    if (new Long(message[1]) - System.currentTimeMillis() <= TimeUnit.SECONDS.toMillis(10)){
+                    // if the response arrived in time, the user is registered and is online then accept else skip the
+                    // response
+                    if ((System.currentTimeMillis() - new Long(message[2])) <= TimeUnit.SECONDS.toMillis(10)){
                         onlineUsers.add(message[0]);
+                        log.info("user online");
                     }
+                    log.info( Thread.currentThread().getName() + ": received a packet from user: " + message[0]);
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -103,45 +102,35 @@ public class KeepAliveManager {
     }
 
 
-    /**
-     * Because UDP has finite buffer, in case too much datagram packets arrives someone can get lost. To prevent this
-     * I try to speedup readings from it in order to minimize packet loss. To achieve this I calculate I pseudo-optimal
-     * number of receiving threads and if needed then try to start or terminate them.
-     */
-    private void setReceivingThreads(){
-        // calculating the "optimal" number of threads
-        int threads = (int)((3 * onlineUsers.size() * maxPacketLength )/ receivingBufferSize)+1;
-        // if the running threads are optimal return
-        if (threadsNumber == threads || threads > flags.length) return;
-        // too few threads, starting
-        if (threadsNumber < threads)
-            for ( ; threadsNumber<threads; threadsNumber++ ){
-                flags[threadsNumber] = true;
-                ex.submit(() -> receivingTask(threadsNumber));
-            }
-        // too much, terminating
-        else for (; threadsNumber>threads; threads--) flags[threadsNumber]=false;
-    }
 
 
     /**
      * this function tells to start computing keep-alive request on the multicast
+     * Because I expect that the online users a large number. I try to create a good number of receivers threads.
+     * Because UDP ha finite buffer and if it is full datagram gets lost.
      */
     public void startUpdatingStatus(){
        // if already started do nothing
         if (computing) return;
         computing = true;
+        log.info("started updating status");
         ex.submit(() -> {
             try {
+                int cores = Runtime.getRuntime().availableProcessors();
+                log.info("starting " + Integer.toString(cores) + " UDP receivers tasks" );
+                for (int i=0; i < cores; i++){
+                    ex.submit(this::receivingTask);
+                }
                 while (computing){
                     // check if the receiving threads are enough
-                    setReceivingThreads();
                     // send the keep-alive request in multicast
                     multicast.send(keepAlivePacket);
                     // wait 10 seconds
-                    Thread.sleep(TimeUnit.SECONDS.toMillis(10));
+                    log.info("multicast message sent");
+                    Thread.sleep(TimeUnit.SECONDS.toMillis(12));
                     users.forEach((name,value) -> {
                         if (!onlineUsers.contains(name)) value.setOffLine();
+                        else onlineUsers.remove(name);
                     });
                 }
             } catch (IOException | InterruptedException e) {
@@ -149,6 +138,7 @@ public class KeepAliveManager {
                 e.printStackTrace();
                 stopUpdatingStatus();
                 close();
+                throw new RuntimeException(e);
             }
         });
     }

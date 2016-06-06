@@ -1,9 +1,14 @@
 package marco.rcl.shared;
 
+import java.io.Serializable;
+
 /**
  * Created by marko on 03/06/2016.
  */
-public class UserShared {
+public class UserShared  implements Serializable{
+
+    private final static long serialVersionUID = 1L;
+
     private final String name;
     private final boolean status;
 
@@ -16,7 +21,7 @@ public class UserShared {
         return name;
     }
 
-    public boolean isStatus() {
+    public boolean isOnline() {
         return status;
     }
 }

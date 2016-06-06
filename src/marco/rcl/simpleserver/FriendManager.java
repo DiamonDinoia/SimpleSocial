@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 import java.util.logging.Logger;
 
 /**
@@ -24,12 +25,12 @@ public class FriendManager {
     private ConcurrentHashMap<String,HashMap<String,Long>> pendingRequests;
     private ConcurrentHashMap<String,ArrayList<String>> friendships;
     private final static Logger log = Server.getLog();
-
+    private ExecutorService ex = null;
     /**
      * constrictor, initializes data structure and restore the status from the disk
      * @param param structure of configuration parameters
      */
-    public FriendManager(Configs param) {
+    public FriendManager(Configs param, ExecutorService ex) {
         friendships = DiskManager.RestoreFriendList(param.FriendshipFile);
         if (friendships == null){
             log.severe("friendships restore failed");
@@ -39,6 +40,7 @@ public class FriendManager {
         this.requestValidity = param.RequestValidity;
         fileName = param.FriendshipFile;
         backupInterval = param.BackupInterval;
+        this.ex = ex;
         log.info("friend manager correctly started");
     }
 
@@ -174,14 +176,25 @@ public class FriendManager {
      * this functions initiates the friend manager to compact the pending request list
      * @throws InterruptedException in case of interruption
      */
-    public void startRemovingExpiredRequests() throws InterruptedException {
+    public void startRemovingExpiredRequests() {
         if (remove) return;
         remove = true;
         log.info("started removing expired requests");
-        while (remove) {
-            removeExpiredRequests();
-            Thread.sleep(requestValidity / 2);
-        }
+        ex.submit( () -> {
+            try {
+                while (remove) {
+                    removeExpiredRequests();
+                    Thread.sleep(requestValidity / 2);
+                    log.info("expired requests removed");
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                this.stopRemovingExpiredRequests();
+                this.stopDumpingFriendships();
+                log.severe("error in removing expired requests" + e.toString());
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     /**
@@ -196,18 +209,28 @@ public class FriendManager {
      * this function tells to the friendManager to start backing-up the friendlist
      * @throws InterruptedException
      */
-    public void startDumpingFriendships() throws InterruptedException {
+    public void startDumpingFriendships() {
         if (dumping) return;
         log.info("start performing backups");
         dumping = true;
-        while (dumping){
-            if(DiskManager.dumpFriendList(friendships,fileName)){
-                log.severe("failed performing a backup");
-                throw new RuntimeException("failed saving friendships exiting");
+        ex.submit(() -> {
+            try {
+                while (dumping){
+                    if(DiskManager.dumpFriendList(friendships,fileName)){
+                        log.severe("failed performing a backup");
+                        throw new RuntimeException("failed saving friendships exiting");
+                    }
+                    log.info("backup complete");
+                    Thread.sleep(backupInterval);
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                this.stopDumpingFriendships();
+                this.stopRemovingExpiredRequests();
+                log.severe("error in saving friendships exiting");
+                throw new RuntimeException(e);
             }
-            log.info("backup complete");
-            Thread.sleep(backupInterval);
-        }
+        });
     }
 
     /**

@@ -64,7 +64,7 @@ public class DiskManager {
                 } catch (IOException e) {
                     e.printStackTrace();
                     registeredUsers = null;
-                    log.severe("impossible to recover");
+                    log.severe("impossible to recover" + e.toString());
                 }
             }
         }
@@ -140,12 +140,15 @@ public class DiskManager {
             friends = new ConcurrentHashMap<>();
             try {
                 if (f.createNewFile()) log.info("file correctly created");
-                    else throw new IOException();
+                else throw new IOException();
             } catch (IOException e1) {
-                log.severe("Impossible create friend file " + e1.toString() );
+                log.severe("Impossible create friend file " + e1.toString());
                 e.printStackTrace();
                 friends = null;
             }
+        } catch (EOFException e){
+            log.info("file already exists");
+            friends = new ConcurrentHashMap<>();
         } catch (IOException e) {
             log.severe("Error during restore of friend list " + e.toString());
             e.printStackTrace();
@@ -162,6 +165,7 @@ public class DiskManager {
                 if (in != null) in.close();
             } catch (IOException ignored) {ignored.getLocalizedMessage();}
         }
+        log.info("restore complete");
         return friends;
     }
 

@@ -43,17 +43,6 @@ public class User implements Serializable{
         return online;
     }
 
-    public User setOnline() {
-        this.online = true;
-        this.token = new Token();
-        return this;
-    }
-
-    public User setOffLine() {
-        this.token = null;
-        this.online = false;
-        return this;
-    }
 
     public String getName() {
         return name;
@@ -80,6 +69,17 @@ public class User implements Serializable{
         return port;
     }
 
+    public User setOnline() {
+        this.online = true;
+        this.token = new Token();
+        return this;
+    }
+
+    public User setOffLine() {
+        this.token = null;
+        this.online = false;
+        return this;
+    }
     public User setAddress(String address) {
         this.address = address;
         return this;

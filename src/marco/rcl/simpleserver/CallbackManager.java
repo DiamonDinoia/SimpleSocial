@@ -7,6 +7,7 @@ import java.rmi.server.RemoteObject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 import java.util.logging.Logger;
 
 /**
@@ -24,18 +25,20 @@ public class CallbackManager extends RemoteObject implements ServerCallbackManag
     private String pendingContentsFile;
     private long backupInterval;
     private boolean backing = false;
+    private ExecutorService ex = null;
 
     /**
      * @param friendManager friend manager of the server
      * @param userManager user manager of the server
      * @param config config parameters
      */
-    public CallbackManager(FriendManager friendManager, UserManager userManager, Configs config) {
+    public CallbackManager(FriendManager friendManager, UserManager userManager, Configs config, ExecutorService ex) {
         this.friendManager = friendManager;
         this.userManager = userManager;
         this.pendingContentsFile = config.PendingContents;
         this.followersFile = config.CallbackFileName;
         this.backupInterval = config.BackupInterval;
+        this.ex = ex;
         this.followers = DiskManager.RestoreFriendList(config.CallbackFileName);
         // if something goes wrong there nothing there's no recovery, aborting
         if (followers == null){
@@ -80,7 +83,7 @@ public class CallbackManager extends RemoteObject implements ServerCallbackManag
             if (c != null) {
                 // try to send him the content
                 try {
-                    c.content(content);
+                    c.content("User: " + user + " Content: " + content);
                     log.info("content correctly sent to " + user);
                     // if ok go to the next follower
                     continue;
@@ -90,8 +93,9 @@ public class CallbackManager extends RemoteObject implements ServerCallbackManag
                 }
             }
             // if the follower is offline or the send fails save the pending content
-            if (pendingContents.containsKey(follower)) pendingContents.get(follower).add(content);
-                else pendingContents.put(follower, createAndAdd(content));
+            if (pendingContents.containsKey(follower))
+                pendingContents.get(follower).add("User: " + user + " Content: " + content);
+            else pendingContents.put(follower, createAndAdd("User: " + user + " Content: " + content));
         }
     }
 
@@ -108,7 +112,7 @@ public class CallbackManager extends RemoteObject implements ServerCallbackManag
                         c.content(content);
                         contents.remove(content);
                     } catch (RemoteException e){
-                        log.severe("problem in sending contents");
+                        log.severe("problem in sending contents" + e.toString());
                     }
                 }
                 if (contents.isEmpty()) pendingContents.remove(name);
@@ -137,23 +141,36 @@ public class CallbackManager extends RemoteObject implements ServerCallbackManag
      * this function saves the current state of followers and contents on the disk
      * @throws InterruptedException
      */
-    public void startBackup() throws InterruptedException {
+    public void startBackup() {
         // if already started do noting
         if (backing) return;
         backing = true;
         // loops forever saving the structures
-        while (backing){
-            if (DiskManager.dumpFriendList(followers,followersFile)) {
-                log.severe("failed saving follower list on the disk");
-                throw new RuntimeException("failed saving follower list on the disk");
+        ex.submit(() -> {
+            try {
+                while (backing){
+                    if (DiskManager.dumpFriendList(followers,followersFile)) {
+                        log.severe("failed saving follower list on the disk");
+                        throw new RuntimeException("failed saving follower list on the disk");
+                    }
+                    if (DiskManager.dumpFriendList(pendingContents,pendingContentsFile)){
+                        log.severe("failed saving pending contents on the disk");
+                        throw new RuntimeException("failed saving pending contents on the disk");
+                    }
+                    log.info("backup complete");
+                    // because disk is slow do this only after an interval
+                        Thread.sleep(backupInterval);
+                }
+            } catch (InterruptedException e) {
+                this.stopBackup();
+                log.severe("problems in saving friendships");
+                e.printStackTrace();
+                throw new RuntimeException(e);
             }
-            if (DiskManager.dumpFriendList(pendingContents,pendingContentsFile)){
-                log.severe("failed saving pending contents on the disk");
-                throw new RuntimeException("failed saving pending contents on the disk");
-            }
-            log.info("backup complete");
-            // because disk is slow do this only after an interval
-            Thread.sleep(backupInterval);
-        }
+        });
+    }
+
+    public void stopBackup(){
+        backing = false;
     }
 }

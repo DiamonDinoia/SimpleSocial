@@ -1,5 +1,6 @@
 package marco.rcl.shared;
 
+import java.io.Serializable;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -10,7 +11,8 @@ import java.util.concurrent.TimeUnit;
  * @see UUID
  * TODO: would be nice to have a way to check if the Token generated is used by another client
  */
-public class Token {
+public class Token implements Serializable {
+    private final static long serialVersionUID = 1L;
     private final UUID id;
     private final long timestamp;
     private final long VALIDITY = TimeUnit.DAYS.toMillis(1);
