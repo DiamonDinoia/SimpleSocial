@@ -14,9 +14,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Logger;
 
+import static marco.rcl.shared.Commands.*;
+
 public class Client {
 
-    private static final Logger log = LoggerFactory.getLogger("clientLogger","client");
+    private static Logger log = null;
     private static Configs configs = null;
     private static final String directory = "./ClientData";
     private static Vector<String> friendsRequests = new Vector<>();
@@ -67,7 +69,12 @@ public class Client {
         System.exit(0);
     }
 
-    private static Response sendCommand(int code){
+    /**
+     * TODO: check why you get response null
+     * @param code
+     * @return
+     */
+    private static Response sendCommand(Commands code){
         if (tcp.sendCommand(new Command(code,name,password)
                 .setContent(content)
                 .setUser(user)
@@ -95,7 +102,7 @@ public class Client {
         name = scanner.next();
         System.out.println("type the password");
         password = scanner.next();
-        Response response = sendCommand(Commands.Login);
+        Response response = sendCommand(Login);
         token = response.getToken();
         if (response.getError()==Errors.UserNotRegistered) while(!register());
         return response.getError()==Errors.noErrors;
@@ -106,7 +113,7 @@ public class Client {
         name = scanner.next();
         System.out.println("type the password");
         password = scanner.next();
-        Response response = sendCommand(Commands.Register);
+        Response response = sendCommand(Register);
         token = response.getToken();
         if (response.getError()==Errors.UserAlreadyRegistered) return login();
         return response.getError()==Errors.noErrors;
@@ -129,6 +136,12 @@ public class Client {
 
 
     public static void main(String[] args) {
+        try {
+            log =  LoggerFactory.getLogger("clientLogger","client");
+        } catch (IOException e) {
+            System.err.println("failed creation of logfile");
+            System.exit(-1);
+        }
         setUp();
         getConfigs();
         int code = -1;
@@ -154,7 +167,7 @@ public class Client {
                 case 0:
                     System.out.println("type user name");
                     user = scanner.next();
-                    String [] userlist = sendCommand(Commands.SearchUser).getUserList();
+                    String [] userlist = sendCommand(SearchUser).getUserList();
                     if (userlist==null){
                         System.out.println("user not found");
                         break;
@@ -166,29 +179,29 @@ public class Client {
                 case 1:
                     System.out.println("type user name");
                     user = scanner.next();
-                    sendCommand(Commands.FriendRequest);
+                    sendCommand(FriendRequest);
                     break;
                 case 2:
                     System.out.println("type user name");
                     user = scanner.next();
-                    sendCommand(Commands.FriendConfirm);
+                    sendCommand(FriendConfirm);
                     friendsRequests.remove(user);
                     break;
                 case 3:
                     System.out.println("type user name");
                     user = scanner.next();
-                    sendCommand(Commands.FriendIgnore);
+                    sendCommand(FriendIgnore);
                     friendsRequests.remove(user);
                     break;
                 case 4:
-                    for (UserShared shared : sendCommand(Commands.FriendList).getFriendList()) {
+                    for (UserShared shared : sendCommand(FriendList).getFriendList()) {
                         System.out.println(shared.getName() + "Online:" + shared.isOnline());
                     }
                     break;
                 case 5:
                     System.out.println("type the content");
                     content = scanner.next();
-                    sendCommand(Commands.Publish);
+                    sendCommand(Publish);
                     break;
                 case 6:
                     System.out.println("type user name");
@@ -196,6 +209,10 @@ public class Client {
                     Errors.printErrors(handler.follow(user,name,password,token));
                     break;
                 case 7:
+                    if (friendsRequests==null){
+                        System.out.println("You have no firends... XD");
+                        break;
+                    }
                     for (String request : friendsRequests) {
                         System.out.println(request);
                     }

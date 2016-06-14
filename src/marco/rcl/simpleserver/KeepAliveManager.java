@@ -101,6 +101,13 @@ public class KeepAliveManager {
         }
     }
 
+    /**
+     * this function notifies to the keep-alive manager the new user logged or registered
+     * @param user new user added to online check
+     */
+    void notify(String user){
+        onlineUsers.add(user);
+    }
 
 
 
@@ -108,6 +115,7 @@ public class KeepAliveManager {
      * this function tells to start computing keep-alive request on the multicast
      * Because I expect that the online users a large number. I try to create a good number of receivers threads.
      * Because UDP ha finite buffer and if it is full datagram gets lost.
+     * TODO: allow the userManager to put new Users to the onlineUsers list
      */
     public void startUpdatingStatus(){
        // if already started do nothing

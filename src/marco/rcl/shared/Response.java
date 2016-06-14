@@ -1,6 +1,7 @@
 package marco.rcl.shared;
 
 import java.io.Serializable;
+import static marco.rcl.shared.Errors.*;
 
 /**
  * Created by Marco on 31/05/16.
@@ -9,14 +10,14 @@ public class Response implements Serializable {
 
     private final static long serialVersionUID = 1L;
 
-    private int error = Errors.noErrors;
+    private Errors error = noErrors;
     private Token token = null;
     private String[] userList = null;
     private UserShared[] friendList = null;
 
     public Response(){}
 
-    public Response(int error) {
+    public Response(Errors error) {
         this.error = error;
     }
 
@@ -33,7 +34,7 @@ public class Response implements Serializable {
         this.friendList = friendList;
     }
 
-    public int getError() {
+    public Errors getError() {
         return error;
     }
 

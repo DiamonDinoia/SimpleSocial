@@ -5,7 +5,6 @@ import marco.rcl.shared.Configs;
 import marco.rcl.shared.Response;
 
 import java.io.IOException;
-import java.io.InterruptedIOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
@@ -80,33 +79,22 @@ public class ConnectionManager {
     private void responder(Socket socket){
         // it is all in one try block because is not important which one fails, the user can always try another time
         Command command = null;
-        ObjectInputStream in = null;
-        ObjectOutputStream out = null;
-        try {
-            in = new ObjectInputStream(socket.getInputStream());
+        try (ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
+             ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream())) {
             // receive the command
             command = (Command) in.readObject();
             // decode it
             Response response = userManager.decodeCommand(command);
             // send the response to the client
-            out = new ObjectOutputStream(socket.getOutputStream());
             out.writeObject(response);
             out.flush();
             log.info("user " + command.getName() + " correctly handled");
-            in.close();
-            out.close();
             // simply logs the error, this is not a fatal one
         } catch (IOException | ClassNotFoundException | NullPointerException e) {
-            log.severe("user " + (command!=null ? command.getName() : "" ) + "not correctly handled " + e.toString() );
+            log.severe("user " + (command!=null ? command.getName() : "" ) + " not correctly handled " + e.toString() );
             e.printStackTrace();
             // cleanup and return
-        } finally {
-            try {
-                socket.close();
-                if (in != null) in.close();
-                if (out != null) out.close();
-            } catch (IOException ignored) {}
-        }
+        } finally {try {socket.close();} catch (IOException ignored) {}}
     }
 
     /**

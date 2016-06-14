@@ -1,16 +1,19 @@
 package marco.rcl.simpleserver;
 
 
+import com.sun.org.apache.regexp.internal.RE;
 import marco.rcl.shared.*;
+import static marco.rcl.shared.Errors.*;
 
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
-import java.rmi.server.ExportException;
 import java.util.ArrayList;
 import java.util.concurrent.*;
 import java.util.logging.Logger;
+
+import static marco.rcl.shared.Commands.*;
 
 /**
  * This class is used to manage users
@@ -24,6 +27,7 @@ class UserManager {
     private boolean append = false;
     private FriendManager friendManager;
     private CallbackManager callbackManager;
+    private KeepAliveManager keepAliveManager;
 
 
     public UserManager(ExecutorService ex, FriendManager friendManager) {
@@ -39,6 +43,14 @@ class UserManager {
         log.info("userManager correctly started");
     }
 
+    /**
+     * this function creates a link between UserManager and Keep-aliveManager in order to notify the new users
+     * @param keepAliveManager the keep alive manager
+     */
+    public UserManager setKeepAliveManager(KeepAliveManager keepAliveManager) {
+        this.keepAliveManager = keepAliveManager;
+        return this;
+    }
     /**
      * create a link between CallbackManager and UserManager
      * @param callbackManager the Callback Manager
@@ -75,9 +87,9 @@ class UserManager {
      * @param token user token
      * @return confirm message or error code
      */
-    public int setCallback(ClientCallback c, String name, String password, Token token){
-        int check = checkUser(name, password, token);
-        if (check == Errors.noErrors) users.get(name).setCallback(c);
+    public Errors setCallback(ClientCallback c, String name, String password, Token token){
+        Errors check = checkUser(name, password, token);
+        if (check == noErrors) users.get(name).setCallback(c);
         return check;
     }
 
@@ -98,20 +110,20 @@ class UserManager {
      * @param token token of the user
      * @return confirm code or error
      */
-    public int checkUser(String name,String password, Token token){
+    public Errors checkUser(String name, String password, Token token){
         // username must not be null
-        if (name==null) return Errors.UsernameNotValid;
+        if (name==null) return UsernameNotValid;
         // the user must be registered
-        if (!users.containsKey(name)) return Errors.UserNotRegistered;
+        if (!users.containsKey(name)) return UserNotRegistered;
         User u = users.get(name);
         // checking user password
-        if (password==null || !u.getPassword().equals(password)) return Errors.PasswordNotValid;
+        if (password==null || !u.getPassword().equals(password)) return PasswordNotValid;
         // the user must be online
-        if (!u.isOnline()) return Errors.UserNotLogged;
+        if (!u.isOnline()) return UserNotLogged;
         // checking the token
-        if (token==null || !u.getToken().isValid() || !u.getToken().equals(token)) return Errors.TokenNotValid;
+        if (token==null || !u.getToken().isValid() || !u.getToken().equals(token)) return TokenNotValid;
         // no errors then
-        return Errors.noErrors;
+        return noErrors;
     }
 
     /**
@@ -123,14 +135,15 @@ class UserManager {
      */
     private Response register(String name, String password, String address, int port){
         // if the username is already taken by other users
-        if (users.containsKey(name)) return new Response(Errors.UserAlreadyRegistered);
+        if (users.containsKey(name)) return new Response(UserAlreadyRegistered);
         // if the address or the port are null return an error
-        if (address==null || port < 0) return new Response(Errors.AddressNotValid);
+        if (address==null || port < 0) return new Response(AddressNotValid);
         // if the username and password are either valid, add the user to the registered user
         User u = new User(name, password,address,port);
         users.put(name,u);
         // perform async update to the userFile on the disk
         ex.submit(()-> updateUserFile(u));
+        keepAliveManager.notify(name);
         // add the user to the keep alive checklist
         return new Response(u.getToken());
     }
@@ -144,11 +157,11 @@ class UserManager {
      */
     private Response login(String name, String password, String address, int port){
         // the user must be registered
-        if (!users.containsKey(name)) return new Response(Errors.UserNotRegistered);
+        if (!users.containsKey(name)) return new Response(UserNotRegistered);
         // if the address or the port are null return an error
-        if (address==null || port < 0) return new Response(Errors.AddressNotValid);
+        if (address==null || port < 0) return new Response(AddressNotValid);
         // checking user password
-        if (!users.get(name).getPassword().equals(password)) return new Response(Errors.PasswordNotValid);
+        if (!users.get(name).getPassword().equals(password)) return new Response(PasswordNotValid);
         // if the user is registered the update his status
         User u = users.get(name)
                     .updateToken()
@@ -156,6 +169,7 @@ class UserManager {
                     .setAddress(address)
                     .setPort(port);
         // add the user to the keep alive checklist
+        keepAliveManager.notify(name);
         return new Response(u.getToken());
     }
 
@@ -215,7 +229,7 @@ class UserManager {
             BufferedWriter writer = null;
         try (Socket socket = new Socket()){
             User u = users.get(receiver);
-            if (!u.isOnline()) return new Response(Errors.UserOffline);
+            if (!u.isOnline()) return new Response(UserOffline);
             SocketAddress sa = new InetSocketAddress(u.getAddress(),u.getPort());
             socket.connect(sa, (int) TimeUnit.MINUTES.toMillis(1));
             writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
@@ -228,7 +242,7 @@ class UserManager {
             e.printStackTrace();
             if (writer!=null) try {writer.close();} catch (IOException ignored) {}
             log.severe("failed the connection to the user " + receiver + " " + e.toString());
-            return new Response(Errors.UserOffline);
+            return new Response(UserOffline);
         }
     }
 
@@ -259,9 +273,9 @@ class UserManager {
      * @return confirm message
      */
     private Response publish(String name, String content){
-        if (content==null) return new Response(Errors.ContentNotValid);
+        if (content==null) return new Response(ContentNotValid);
         callbackManager.publish(name, content);
-        return new Response(Errors.noErrors);
+        return new Response(noErrors);
     }
 
     /**
@@ -284,25 +298,25 @@ class UserManager {
         Token token = command.getToken();
         log.info("received a command");
         // the name and the password must either be not null
-        if (name==null) return new Response(Errors.UsernameNotValid);
-        if (password==null) return new Response(Errors.PasswordNotValid);
-        int code = command.getCommand();
+        if (name==null) return new Response(UsernameNotValid);
+        if (password==null) return new Response(PasswordNotValid);
+        Commands code = command.getCommand();
         // names are not case sensitive
         name = name.toUpperCase();
-        if (code == Commands.Register) return register(name,password,command.getAddress(),command.getPort());
-        if (code == Commands.Login) return login(name,password,command.getAddress(),command.getPort());
-        if (checkUser(name, password, token) != Errors.noErrors) return new Response(checkUser(name,password,token));
-        if (code == Commands.Logout) return logout(name);
+        if (code == Register) return register(name,password,command.getAddress(),command.getPort());
+        if (code == Login) return login(name,password,command.getAddress(),command.getPort());
+        if (checkUser(name, password, token) != noErrors) return new Response(checkUser(name,password,token));
+        if (code == Logout) return logout(name);
         String friend = command.getUser();
-        if (friend==null) return new Response(Errors.UserNotValid);
-        if (code == Commands.SearchUser) return search(friend);
-        if (code == Commands.FriendList) return friendList(name);
-        if (code == Commands.FriendRequest) return addFriendRequest(name,friend);
-        if (code == Commands.FriendConfirm) return confirmRequest(name,friend);
-        if (code == Commands.FriendIgnore) return ignoreRequest(name,friend);
-        if (code == Commands.Publish) return publish(name,command.getContent());
-        if (code == Commands.PendingRequests) return getPendingRequests(name);
-        return new Response(Errors.CommandNotFound);
+        if (friend==null) return new Response(UserNotValid);
+        if (code == SearchUser) return search(friend);
+        if (code == FriendList) return friendList(name);
+        if (code == FriendRequest) return addFriendRequest(name,friend);
+        if (code == FriendConfirm) return confirmRequest(name,friend);
+        if (code == FriendIgnore) return ignoreRequest(name,friend);
+        if (code == Publish) return publish(name,command.getContent());
+        if (code == PendingRequests) return getPendingRequests(name);
+        return new Response(CommandNotFound);
     }
 
 }

@@ -1,6 +1,7 @@
 package marco.rcl.simpleserver;
 
 import marco.rcl.shared.*;
+import static marco.rcl.shared.Errors.*;
 
 import java.rmi.RemoteException;
 import java.rmi.server.RemoteObject;
@@ -100,11 +101,11 @@ public class CallbackManager extends RemoteObject implements ServerCallbackManag
     }
 
     @Override
-    public int register(ClientCallback c, String name, String password, Token token) throws RemoteException {
+    public Errors register(ClientCallback c, String name, String password, Token token) throws RemoteException {
         // check if the user is valid and set his callback
-        int check = userManager.setCallback(c, name, password, token);
+        Errors check = userManager.setCallback(c, name, password, token);
         // if there are no errors and the user has pending content, try send him
-        if (check == Errors.noErrors){
+        if (check == noErrors){
             if (pendingContents.containsKey(name)){
                 ArrayList<String> contents = pendingContents.get(name);
                 for (String content : contents) {
@@ -124,17 +125,17 @@ public class CallbackManager extends RemoteObject implements ServerCallbackManag
 
 
     @Override
-    public int follow(String friendName, String name, String password, Token token) throws RemoteException {
+    public Errors follow(String friendName, String name, String password, Token token) throws RemoteException {
         // if the user is valid
-        int check = userManager.checkUser(name, password, token);
-        if (check != Errors.noErrors) return check;
+        Errors check = userManager.checkUser(name, password, token);
+        if (check != noErrors) return check;
         // a user can follow only one of his friends
         if (Arrays.asList(friendManager.getFriendList(name)).contains(friendName)){
             if (followers.containsKey(friendName)) followers.get(friendName).add(name);
             else followers.put(friendName,createAndAdd(name));
-            return Errors.noErrors;
+            return noErrors;
         }
-        return Errors.UserNotValid;
+        return UserNotValid;
     }
 
     /**

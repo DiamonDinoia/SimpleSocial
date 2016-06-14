@@ -10,7 +10,7 @@ public class Command implements Serializable {
 
     private final static long serialVersionUID = 1L;
 
-    private int command;
+    private Commands command;
     private String name;
     private String password;
     private Token token = null;
@@ -20,7 +20,7 @@ public class Command implements Serializable {
     private int port = -1;
 
 
-    public Command(int command, String name, String password) {
+    public Command(Commands command, String name, String password) {
         this.command = command;
         this.name = name;
         this.password = password;
@@ -63,7 +63,7 @@ public class Command implements Serializable {
         return port;
     }
 
-    public int getCommand() {
+    public Commands getCommand() {
         return command;
     }
 

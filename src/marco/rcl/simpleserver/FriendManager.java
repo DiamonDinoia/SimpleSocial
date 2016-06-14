@@ -4,6 +4,8 @@ package marco.rcl.simpleserver;
 import marco.rcl.shared.Configs;
 import marco.rcl.shared.Errors;
 
+import static marco.rcl.shared.Errors.*;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -52,12 +54,12 @@ public class FriendManager {
      * @param sender the user that send the request
      * @return Error code or Confirm
      */
-    public int addFriendRequest(String receiver, String sender){
+    public Errors addFriendRequest(String receiver, String sender){
         // if the sender and the receiver are the same return error
-        if (receiver.equals(sender)) return Errors.RequestNotValid;
+        if (receiver.equals(sender)) return RequestNotValid;
         // if they are already friends return error
         if (friendships.containsKey(receiver) && friendships.get(receiver).contains(sender))
-            return Errors.RequestNotValid;
+            return RequestNotValid;
         // else add the friend request
         if (pendingRequests.containsKey(receiver)){
             pendingRequests.get(receiver).put(sender, System.currentTimeMillis());
@@ -67,7 +69,7 @@ public class FriendManager {
             pendingRequests.put(receiver,tmp);
         }
         log.info("added a friend request");
-        return Errors.noErrors;
+        return noErrors;
     }
 
     /**
@@ -105,17 +107,17 @@ public class FriendManager {
      * @param sender the sender of the request
      * @return confirm, otherwise an error
      */
-    public int confirmFriendRequest(String receiver, String sender){
+    public Errors confirmFriendRequest(String receiver, String sender){
         // if the receiver has requests and one of them is from the sender then confirm else return error
         if (pendingRequests.containsKey(receiver) && pendingRequests.get(receiver).containsKey(sender)){
             addFriendship(receiver,sender);
             addFriendship(sender,receiver);
             removePendingRequest(receiver,sender);
             log.info("pending request confirmed");
-            return Errors.noErrors;
+            return noErrors;
         }
         log.info("impossible to confirm a pending request");
-        return Errors.ConfirmNotValid;
+        return ConfirmNotValid;
     }
 
     /**
@@ -125,15 +127,15 @@ public class FriendManager {
      * @param sender the sender of the request
      * @return confirm, otherwise an error
      */
-    public int ignoreFriendRequest(String receiver, String sender){
+    public Errors ignoreFriendRequest(String receiver, String sender){
         // if the receiver has requests and one of them is from the sender then ignore else return error
         if (pendingRequests.containsKey(receiver) && pendingRequests.get(receiver).containsKey(sender)){
             removePendingRequest(receiver,sender);
             log.info("pending request correctly ignored");
-            return Errors.noErrors;
+            return noErrors;
         }
         log.info("pending request not valid");
-        return Errors.IgnoreNotValid;
+        return IgnoreNotValid;
     }
 
     /**

@@ -4,26 +4,13 @@ package marco.rcl.shared;
 /**
  * Created by Marco on 29/05/16.
  */
-public class Errors {
+public enum Errors {
+    CommandNotFound, noErrors, UserAlreadyRegistered, UsernameNotValid, PasswordNotValid, UserNotRegistered,
+    TokenNotValid, UserNotLogged, AddressNotValid, RequestNotValid, ConfirmNotValid, IgnoreNotValid, UserNotValid,
+    UserOffline, ContentNotValid;
 
-    final static public int CommandNotFound = -1;
-    final static public int noErrors = 0;
-    final static public int UserAlreadyRegistered = 1;
-    final static public int UsernameNotValid = 2;
-    final static public int PasswordNotValid = 3;
-    final static public int UserNotRegistered = 4;
-    final static public int TokenNotValid = 5;
-    final static public int UserNotLogged = 6;
-    final static public int AddressNotValid = 7;
-    final static public int RequestNotValid = 8;
-    final static public int ConfirmNotValid = 9;
-    final static public int IgnoreNotValid = 10;
-    final static public int UserNotValid = 11;
-    final static public int UserOffline = 12;
-    final static public int ContentNotValid = 13;
-
-    public static void printErrors (int code){
-        switch (code){
+    public static void printErrors (Errors error){
+        switch (error){
             case noErrors:
                 System.out.println("Command correctly executed");
                 break;

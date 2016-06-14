@@ -1,6 +1,7 @@
 package marco.rcl.simpleclient;
 
 import marco.rcl.shared.ClientCallback;
+import marco.rcl.shared.Errors;
 import marco.rcl.shared.ServerCallbackManager;
 import marco.rcl.shared.Token;
 
@@ -44,7 +45,7 @@ public class CallbackHandler {
         }
     }
 
-    public int follow(String user,String name, String password, Token token){
+    public Errors follow(String user, String name, String password, Token token){
         try {
             return callbackManager.follow(user, name, password, token);
         } catch (RemoteException e) {

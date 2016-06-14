@@ -33,7 +33,6 @@ public class TCPHandler {
         this.port = (int) config.ServerPort;
         this.address = config.ServerAddress;
         try {
-            socket = new Socket();
             server = new ServerSocket(0);
             log.info("TCP Handles correctly started");
         } catch (IOException e) {
@@ -112,8 +111,7 @@ public class TCPHandler {
      */
     public boolean sendCommand(Command command){
         try {
-            socket = new Socket();
-            socket.connect(new InetSocketAddress(address,port));
+            socket = new Socket(address,port);
             out = new ObjectOutputStream(socket.getOutputStream());
             out.writeObject(command);
             out.flush();
