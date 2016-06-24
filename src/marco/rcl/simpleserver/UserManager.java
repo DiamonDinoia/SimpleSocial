@@ -1,19 +1,22 @@
 package marco.rcl.simpleserver;
 
 
-import com.sun.org.apache.regexp.internal.RE;
 import marco.rcl.shared.*;
-import static marco.rcl.shared.Errors.*;
 
-import java.io.*;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.util.ArrayList;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 import static marco.rcl.shared.Commands.*;
+import static marco.rcl.shared.Errors.*;
 
 /**
  * This class is used to manage users

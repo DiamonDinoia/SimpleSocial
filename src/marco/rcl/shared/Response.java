@@ -1,7 +1,8 @@
 package marco.rcl.shared;
 
 import java.io.Serializable;
-import static marco.rcl.shared.Errors.*;
+
+import static marco.rcl.shared.Errors.noErrors;
 
 /**
  * Created by Marco on 31/05/16.

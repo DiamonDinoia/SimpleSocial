@@ -4,14 +4,14 @@ package marco.rcl.simpleserver;
 import marco.rcl.shared.Configs;
 import marco.rcl.shared.Errors;
 
-import static marco.rcl.shared.Errors.*;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.logging.Logger;
+
+import static marco.rcl.shared.Errors.*;
 
 /**
  * this class manages friendships

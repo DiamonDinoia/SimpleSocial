@@ -7,7 +7,6 @@ import org.json.simple.parser.ParseException;
 
 import java.io.FileReader;
 import java.io.IOException;
-import java.net.DatagramPacket;
 
 /**
  * this interface contains all connection parameters

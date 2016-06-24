@@ -1,9 +1,9 @@
 package marco.rcl.simpleserver;
 
 import java.io.*;
-import java.nio.file.*;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.EventListener;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 

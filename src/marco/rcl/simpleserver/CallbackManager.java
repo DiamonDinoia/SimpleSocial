@@ -1,7 +1,6 @@
 package marco.rcl.simpleserver;
 
 import marco.rcl.shared.*;
-import static marco.rcl.shared.Errors.*;
 
 import java.rmi.RemoteException;
 import java.rmi.server.RemoteObject;
@@ -10,6 +9,9 @@ import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.logging.Logger;
+
+import static marco.rcl.shared.Errors.UserNotValid;
+import static marco.rcl.shared.Errors.noErrors;
 
 /**
  * this class manages callbacks from and to the clients

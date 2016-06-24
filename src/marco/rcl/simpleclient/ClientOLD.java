@@ -1,3 +1,5 @@
+/*
+
 package marco.rcl.simpleclient;
 
 import marco.rcl.shared.*;
@@ -15,9 +17,8 @@ import java.util.concurrent.Executors;
 import java.util.logging.Logger;
 
 import static marco.rcl.shared.Commands.*;
-import static marco.rcl.shared.Errors.*;
 
-public class Client {
+public class ClientOLD {
 
     private static Logger log = null;
     private static Configs configs = null;
@@ -72,11 +73,13 @@ public class Client {
         System.exit(0);
     }
 
-    /**
+    */
+/**
      * TODO: check why you get response null
      * @param code
      * @return
-     */
+     *//*
+
     private static Response sendCommand(Commands code){
         Response response = tcp.sendCommandAndGetResponse(new Command(code,name,password)
                 .setContent(content)
@@ -84,13 +87,28 @@ public class Client {
                 .setToken(token)
                 .setAddress(address)
                 .setPort(port));
+        if (response==null){
+            System.out.println("error getting response");
+            close();
+        } else {
+            Errors.printErrors(response.getError());
+            if (response.getError() == Errors.UserNotLogged) {
+                while (!login()) ;
+                return sendCommand(code);
+            }
+        }
         return response;
     }
 
-    private static Errors login(String name, String Password){
+    private static boolean login(){
+        System.out.println("type the username");
+        name = scanner.next();
+        System.out.println("type the password");
+        password = scanner.next();
         Response response = sendCommand(Login);
         token = response.getToken();
-        return response.getError();
+        if (response.getError()==Errors.UserNotRegistered) while(!register());
+        return response.getError()==Errors.noErrors;
     }
 
     private static boolean register(){
@@ -106,15 +124,15 @@ public class Client {
 
     private static void printCommands(){
         System.out.println("type 0  to search user\n"
-         + "type 1  to send a friend request\n"
-         + "type 2  to confirm a friend request\n"
-         + "type 3  to ignore a friend request\n"
-         + "type 4  to see your friend list\n"
-         + "type 5  to publish something\n"
-         + "type 6  to follow one of your friends\n"
-         + "type 7  to see your friend request\n"
-         + "type 8 to see your followers content\n"
-         + "anything else to logout and quit\n");
+                + "type 1  to send a friend request\n"
+                + "type 2  to confirm a friend request\n"
+                + "type 3  to ignore a friend request\n"
+                + "type 4  to see your friend list\n"
+                + "type 5  to publish something\n"
+                + "type 6  to follow one of your friends\n"
+                + "type 7  to see your friend request\n"
+                + "type 8 to see your followers content\n"
+                + "anything else to logout and quit\n");
     }
 
 
@@ -216,3 +234,4 @@ public class Client {
 }
 
 
+*/

@@ -5,7 +5,10 @@ import marco.rcl.shared.Configs;
 import marco.rcl.shared.Response;
 
 import java.io.*;
-import java.net.*;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketAddress;
+import java.net.SocketException;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.logging.Logger;
@@ -109,39 +112,29 @@ public class TCPHandler {
      * @param command command to send
      * @return returns true if something went wrong or false otherwise
      */
-    public boolean sendCommand(Command command){
-        try {
-            socket = new Socket(address,port);
-            out = new ObjectOutputStream(socket.getOutputStream());
+    public Response sendCommandAndGetResponse(Command command){
+        try (Socket socket = new Socket(address,port);
+             ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+             ObjectInputStream in = new ObjectInputStream(socket.getInputStream())
+            ){
             out.writeObject(command);
             out.flush();
             log.info("command sent");
-            return false;
-        } catch (IOException e) {
-            log.severe("problem sending command " + e.toString());
-            e.printStackTrace();
-            return true;
-        }
-    }
-
-    /**
-     * this function gets the response from the server
-     * @return if error null else the response
-     */
-    public Response getResponse(){
-        try {
-            in = new ObjectInputStream(socket.getInputStream());
             Response r = (Response) in.readObject();
             in.close();
             out.close();
             return r;
-        // empty answer
-        } catch (EOFException e){
-        } catch (IOException | ClassNotFoundException e) {
+        } catch (EOFException ignored){
+        } catch (IOException e) {
+            log.severe("problem sending command " + e.toString());
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
             e.printStackTrace();
             log.severe("something went wrong in getting response " + e.toString());
             return null;
         }
         return null;
     }
+
 }
+
