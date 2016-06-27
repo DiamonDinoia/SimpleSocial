@@ -25,5 +25,6 @@ public class ContentCallback extends RemoteObject implements ClientCallback {
     @Override
     public void content(String content) throws RemoteException {
         contents.add(content);
+        SimpleGUI.addMessage(content);
     }
 }

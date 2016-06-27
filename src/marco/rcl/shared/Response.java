@@ -30,7 +30,6 @@ public class Response implements Serializable {
         this.userList = userList;
     }
 
-
     public Response(UserShared[] friendList){
         this.friendList = friendList;
     }

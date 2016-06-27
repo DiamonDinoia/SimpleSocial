@@ -39,7 +39,7 @@ public class CallbackHandler {
         try {
             callbackManager.register(stub,name,password,token);
         } catch (RemoteException e) {
-            log.severe("problem registring callback " + e.toString());
+            log.severe("problem registering callback " + e.toString());
             e.printStackTrace();
             throw new RuntimeException(e);
         }

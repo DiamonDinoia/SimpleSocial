@@ -1,65 +1,109 @@
 package marco.rcl.simpleclient;
 
 
-import javax.naming.InitialContext;
+import marco.rcl.shared.Errors;
+import marco.rcl.shared.Response;
+
 import javax.swing.*;
 import java.awt.*;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.HashMap;
+
+import static marco.rcl.shared.Errors.noErrors;
+import static marco.rcl.simpleclient.SimpleGUI.buttonNames.*;
 
 /**
  * Created by marko on 21/06/2016.
  */
 public class SimpleGUI {
 
+    private static boolean isStarted = false;
+    private static Dimension buttonDimensions = new Dimension(400,20);
+    private static Dimension viewDimension = new Dimension(600,500);
     private static JFrame window = new JFrame("Simple-Chat");
+    private static JTextArea messageLabel = new JTextArea(1,1);
+    private static JTextField sendMessage = new JTextField(1);
+    private static JButton sendButton = new JButton("Send");
     private static JPanel containerView = new JPanel();
     private static JPanel initialView = new JPanel();
     private static JPanel chatView = new JPanel();
     private static JPanel buttonsView = new JPanel();
-    private static JPanel messagesVies = new JPanel();
+    private static JScrollPane messagesView = new JScrollPane(null,JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+            JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
     private static JPanel sendView = new JPanel();
     private static CardLayout cardLayout = new CardLayout();
     private static HashMap<String,JButton> topButtons = new HashMap<>(5);
     private static String[] viewNames = {"initialView","chatView"};
-    private static boolean isStarted = false;
-    private static Dimension buttonDimensions = new Dimension(400,20);
 
-    private abstract static class buttonNames{
+    private static buttonNames btn = new buttonNames();
+
+    static class buttonNames{
         static final String Logout = "Logout";
         static final String SearchUser = "Search User";
         static final String AddFriend = "Add Friend";
         static final String FriendList = "Friend List";
         static final String FollowFriend = "Follow Friend";
-        static String[] getNames(){
-            return new String[]{Logout,SearchUser,AddFriend,FriendList,FollowFriend};
+
+        static String[] getNames(buttonNames names){
+            if (names==null) return null;
+            ArrayList<String> fields = new ArrayList<>();
+            for (Field field : names.getClass().getDeclaredFields()) {
+                try {
+                    fields.add((String) field.get(field));
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                }
+            }
+            return fields.toArray(new String[fields.size()]);
         }
     }
 
-    private static void initButtons(){
-        for (String name : buttonNames.getNames()){
-            JButton button = new JButton(name);
-            button.setSize(buttonDimensions);
-            buttonsView.add(name,button);
-            topButtons.put(name,button);
-        }
+    public static void addMessage(String text){
+        messageLabel.append(text);
     }
 
     private static void showInitialView(){
+        window.setSize(300,100);
+        containerView.setSize(300,100);
         cardLayout.show(containerView,viewNames[0]);
-        window.setSize(1000,50);
     }
     private static void showChatView(){
-        cardLayout.show(chatView,viewNames[1]);
+        window.setSize(viewDimension);
+        containerView.setSize(viewDimension);
+        cardLayout.show(containerView,viewNames[1]);
     }
+
 
 
     private static void setLayout(){
-        containerView.setLayout(cardLayout);
-        chatView.setLayout(new GridLayout(4,1));
-        buttonsView.setLayout(new FlowLayout());
-        messagesVies.setLayout(new FlowLayout());
-        sendView.setLayout(new FlowLayout());
         initialView.setLayout(new FlowLayout());
+        initialView.setBackground(Color.lightGray);
+        containerView.setLayout(cardLayout);
+        containerView.setSize(viewDimension);
+        chatView.setLayout(new GridBagLayout());
+        chatView.setSize(viewDimension);
+        buttonsView.setLayout(new FlowLayout());
+        messagesView.setSize(viewDimension.width, viewDimension.height - 2*buttonDimensions.height);
+        messagesView.setLayout(new ScrollPaneLayout());
+        sendView.setLayout(new FlowLayout());
+        sendMessage.setSize(viewDimension.width-buttonDimensions.width,buttonDimensions.height);
+        sendView.setSize(viewDimension.width,buttonDimensions.height);
+        sendView.add(sendMessage);
+        sendView.add(sendButton);
+        window.setSize(300,100);
+        window.setLocationRelativeTo(null);
+        window.add(containerView);
+        window.setVisible(true);
+        messageLabel.setSize(viewDimension.width, viewDimension.height - 2*buttonDimensions.height);
+        messageLabel.setBackground(Color.blue);
+        messageLabel.setVisible(true);
+        messagesView.add(messageLabel);
+        sendMessage.setSize(viewDimension.width - buttonDimensions.width,buttonDimensions.height);
+        chatView.setBackground(Color.lightGray);
+        sendMessage.setBackground(Color.white);
+        System.out.println(messagesView.getSize());
+        System.out.println(sendView.getSize());
     }
 
     private static void setViews(){
@@ -72,27 +116,123 @@ public class SimpleGUI {
         JButton registerButton = new JButton("Register");
         loginButton.setSize(buttonDimensions);
         registerButton.setSize(buttonDimensions);
+        loginButton.setBackground(Color.WHITE);
+        registerButton.setBackground(Color.white);
+        loginButton.addActionListener( e -> {
+            JTextField username = new JTextField();
+            JTextField password = new JTextField();
+            Object[] message = {"Username:", username, "Password", password};
+            int option =  JOptionPane.showConfirmDialog(initialView,message,"Login",JOptionPane.DEFAULT_OPTION);
+            if (option!=JOptionPane.OK_OPTION) return;
+            Errors error = Client.login(username.getText(),password.getText());
+            if (error == Errors.noErrors)showChatView();
+            else JOptionPane.showMessageDialog(initialView, Errors.getError(error),
+                    "Login Error",JOptionPane.ERROR_MESSAGE);
+        });
+        registerButton.addActionListener( e -> {
+            JTextField username = new JTextField();
+            JTextField password = new JTextField();
+            Object[] message = {"Username:", username, "Password", password};
+            int option = JOptionPane.showConfirmDialog(initialView,message,
+                    "Register",JOptionPane.DEFAULT_OPTION);
+            if (option!=JOptionPane.OK_OPTION) return;
+            Errors error = Client.register(username.getText(),password.getText());
+            if (error == Errors.noErrors)showChatView();
+            else JOptionPane.showMessageDialog(initialView, Errors.getError(error),
+                    "Registration Error",JOptionPane.ERROR_MESSAGE);
+        });
+        initialView.add(loginButton);
+        initialView.add(registerButton);
     }
 
-    private void setListeners(){
+    private static void setListeners(){
         topButtons.forEach((name,button) -> {
             switch (name) {
-                case buttonNames.Logout:
-                    Client.logout();
-                    showInitialView();
+                case Logout:
+                    button.addActionListener( e -> {
+                        Client.logout();
+                        JOptionPane.showMessageDialog(chatView,"Good bye!!");
+                        showInitialView();
+                    });
                     break;
+                case SearchUser:
+                    button.addActionListener( e -> {
+                        String user = JOptionPane.showInputDialog("Please insert the username");
+                        Response response = Client.searchUser(user);
+                        if (response.getError()==noErrors)
+                            JOptionPane.showMessageDialog(chatView,response.getUserList());
+                        else JOptionPane.showInputDialog(chatView,Errors.getError(response.getError()),
+                                "Search Error",JOptionPane.ERROR_MESSAGE);
+                    });
+                    break;
+                case AddFriend:
+                    button.addActionListener( e -> {
+                        String user = JOptionPane.showInputDialog("Please insert the username");
+                        Errors error = Client.addFriend(user);
+                        if (error==noErrors) JOptionPane.showConfirmDialog(chatView,"Request sent");
+                        else JOptionPane.showInputDialog(chatView,Errors.getError(error),
+                                "Add Friend",JOptionPane.ERROR_MESSAGE);
+                    });
+                    break;
+                case FriendList:
+                    button.addActionListener( e -> {
+                        Response response = Client.friendList();
+                        if (response.getError()!= noErrors){
+                            JOptionPane.showMessageDialog(chatView,Errors.getError(response.getError()),
+                                    "Friend List",JOptionPane.ERROR_MESSAGE);
+                        } else {
+                            JOptionPane.showMessageDialog(chatView,response.getFriendList());
+                        }
+                    });
+                    break;
+                case FollowFriend:
+                    button.addActionListener( e -> {
+                        String user = JOptionPane.showInputDialog("Please insert the username");
+                        Errors error = Client.followFriend(user);
+                        if (error == noErrors) JOptionPane.showConfirmDialog(chatView, "User followed");
+                        else JOptionPane.showInputDialog(chatView, Errors.getError(error),
+                                "Follow Friend", JOptionPane.ERROR_MESSAGE);
+                    });
             }
         });
+    }
+
+    private static void initButtons(){
+        for (String name : buttonNames.getNames(btn)){
+            JButton button = new JButton(name);
+            button.setSize(buttonDimensions);
+            buttonsView.add(name,button);
+            topButtons.put(name,button);
+        }
+        setListeners();
+        sendButton.setSize(buttonDimensions);
+    }
+    private static void setChatView(){
+        initButtons();
+        topButtons.forEach((name,button) -> buttonsView.add(button));
+        GridBagConstraints constraints = new GridBagConstraints();
+        constraints.gridx = 0;
+        constraints.gridy = 0;
+        chatView.add(buttonsView,constraints);
+        constraints.gridx = 0;
+        constraints.gridy = 1;
+        chatView.add(messagesView,constraints);
+        constraints.gridy = 0;
+        constraints.gridy = 2;
+        chatView.add(sendView,constraints);
     }
 
 
     public static void startView(){
         if (isStarted)return;
         isStarted=true;
-        initButtons();
+        window.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setLayout();
         setViews();
-        showChatView();
+        setInitialView();
+        showInitialView();
+        setChatView();
+
     }
 
 

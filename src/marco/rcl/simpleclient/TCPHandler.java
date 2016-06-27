@@ -7,7 +7,6 @@ import marco.rcl.shared.Response;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketAddress;
 import java.net.SocketException;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;

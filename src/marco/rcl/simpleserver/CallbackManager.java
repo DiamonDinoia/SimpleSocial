@@ -86,7 +86,7 @@ public class CallbackManager extends RemoteObject implements ServerCallbackManag
             if (c != null) {
                 // try to send him the content
                 try {
-                    c.content("User: " + user + " Content: " + content);
+                    c.content("User: " + user + " Content: " + content + '\n');
                     log.info("content correctly sent to " + user);
                     // if ok go to the next follower
                     continue;

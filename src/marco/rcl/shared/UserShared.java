@@ -24,4 +24,9 @@ public class UserShared  implements Serializable{
     public boolean isOnline() {
         return status;
     }
+
+    @Override
+    public String toString() {
+        return name + " " + status;
+    }
 }
