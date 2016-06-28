@@ -74,41 +74,68 @@ public class SimpleGUI {
         cardLayout.show(containerView,viewNames[1]);
     }
 
+    private static void setButtonsView(){
+        buttonsView.setLayout(new FlowLayout());
+    }
 
+    private static void setMessageView(){
+        messageLabel.setSize(viewDimension.width, viewDimension.height - 2*buttonDimensions.height);
+        messageLabel.setBackground(Color.blue);
+        messagesView.setSize(viewDimension.width, viewDimension.height - 2*buttonDimensions.height);
+        messagesView.setLayout(new ScrollPaneLayout());
+        messagesView.add(messageLabel);
+
+    }
+
+
+    private static void setSendView(){
+        sendView.setLayout(new FlowLayout());
+        sendMessage.setSize(viewDimension.width-buttonDimensions.width,buttonDimensions.height);
+        sendView.setSize(viewDimension.width,buttonDimensions.height);
+        sendMessage.setSize(viewDimension.width - buttonDimensions.width,buttonDimensions.height);
+        sendMessage.setBackground(Color.white);
+        sendView.add(sendMessage);
+        sendView.add(sendButton);
+    }
 
     private static void setLayout(){
         initialView.setLayout(new FlowLayout());
         initialView.setBackground(Color.lightGray);
         containerView.setLayout(cardLayout);
         containerView.setSize(viewDimension);
-        chatView.setLayout(new GridBagLayout());
-        chatView.setSize(viewDimension);
-        buttonsView.setLayout(new FlowLayout());
-        messagesView.setSize(viewDimension.width, viewDimension.height - 2*buttonDimensions.height);
-        messagesView.setLayout(new ScrollPaneLayout());
-        sendView.setLayout(new FlowLayout());
-        sendMessage.setSize(viewDimension.width-buttonDimensions.width,buttonDimensions.height);
-        sendView.setSize(viewDimension.width,buttonDimensions.height);
-        sendView.add(sendMessage);
-        sendView.add(sendButton);
         window.setSize(300,100);
         window.setLocationRelativeTo(null);
         window.add(containerView);
         window.setVisible(true);
-        messageLabel.setSize(viewDimension.width, viewDimension.height - 2*buttonDimensions.height);
-        messageLabel.setBackground(Color.blue);
-        messageLabel.setVisible(true);
-        messagesView.add(messageLabel);
-        sendMessage.setSize(viewDimension.width - buttonDimensions.width,buttonDimensions.height);
-        chatView.setBackground(Color.lightGray);
-        sendMessage.setBackground(Color.white);
-        System.out.println(messagesView.getSize());
-        System.out.println(sendView.getSize());
     }
 
     private static void setViews(){
         containerView.add(viewNames[0], initialView);
         containerView.add(viewNames[1], chatView);
+    }
+
+    private static void setChatView(){
+        GridBagLayout layout = new GridBagLayout();
+        GridBagConstraints constraints = new GridBagConstraints();
+        constraints.fill = GridBagConstraints.BOTH;
+        chatView.setLayout(layout);
+        chatView.setSize(viewDimension);
+        chatView.setBackground(Color.lightGray);
+        initButtons();
+        topButtons.forEach((name,button) -> buttonsView.add(button));
+        constraints.gridx = 0;
+        constraints.gridy = 0;
+        chatView.add(buttonsView,constraints);
+        constraints.gridx = 0;
+        constraints.gridy = 1;
+        constraints.ipadx = 400;
+        constraints.ipady = 200;
+        chatView.add(messagesView,constraints);
+        constraints.ipadx = 200;
+        constraints.ipady = 1;
+        constraints.gridy = 0;
+        constraints.gridy = 2;
+        chatView.add(sendView,constraints);
     }
 
     private static void setInitialView(){
@@ -207,20 +234,6 @@ public class SimpleGUI {
         setListeners();
         sendButton.setSize(buttonDimensions);
     }
-    private static void setChatView(){
-        initButtons();
-        topButtons.forEach((name,button) -> buttonsView.add(button));
-        GridBagConstraints constraints = new GridBagConstraints();
-        constraints.gridx = 0;
-        constraints.gridy = 0;
-        chatView.add(buttonsView,constraints);
-        constraints.gridx = 0;
-        constraints.gridy = 1;
-        chatView.add(messagesView,constraints);
-        constraints.gridy = 0;
-        constraints.gridy = 2;
-        chatView.add(sendView,constraints);
-    }
 
 
     public static void startView(){
@@ -231,8 +244,10 @@ public class SimpleGUI {
         setViews();
         setInitialView();
         showInitialView();
+        setButtonsView();
+        setMessageView();
+        setSendView();
         setChatView();
-
     }
 
 
