@@ -10,6 +10,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import static java.lang.Enum.valueOf;
 import static marco.rcl.shared.Errors.noErrors;
 import static marco.rcl.simpleclient.SimpleGUI.buttonNames.*;
 
@@ -29,7 +30,7 @@ public class SimpleGUI {
     private static JPanel initialView = new JPanel();
     private static JPanel chatView = new JPanel();
     private static JPanel buttonsView = new JPanel();
-    private static JScrollPane messagesView = new JScrollPane(null,JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+    private static JScrollPane messagesView = new JScrollPane(messageLabel,JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
             JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
     private static JPanel sendView = new JPanel();
     private static CardLayout cardLayout = new CardLayout();
@@ -79,12 +80,8 @@ public class SimpleGUI {
     }
 
     private static void setMessageView(){
-        messageLabel.setSize(viewDimension.width, viewDimension.height - 2*buttonDimensions.height);
-        messageLabel.setBackground(Color.blue);
-        messagesView.setSize(viewDimension.width, viewDimension.height - 2*buttonDimensions.height);
-        messagesView.setLayout(new ScrollPaneLayout());
-        messagesView.add(messageLabel);
-
+        messageLabel.setEditable(false);
+        messageLabel.setBackground(Color.WHITE);
     }
 
 
@@ -117,25 +114,39 @@ public class SimpleGUI {
     private static void setChatView(){
         GridBagLayout layout = new GridBagLayout();
         GridBagConstraints constraints = new GridBagConstraints();
-        constraints.fill = GridBagConstraints.BOTH;
+        constraints.anchor = GridBagConstraints.FIRST_LINE_START;
         chatView.setLayout(layout);
         chatView.setSize(viewDimension);
         chatView.setBackground(Color.lightGray);
         initButtons();
-        topButtons.forEach((name,button) -> buttonsView.add(button));
-        constraints.gridx = 0;
-        constraints.gridy = 0;
-        chatView.add(buttonsView,constraints);
+        constraints.weightx = 0;
+        constraints.weighty = 0;
+        constraints.gridx=0;
+        constraints.gridy=0;
+        topButtons.forEach((name,button) -> {
+            chatView.add(button,constraints);
+            constraints.gridx = GridBagConstraints.RELATIVE;
+        });
+        constraints.fill = GridBagConstraints.BOTH;
         constraints.gridx = 0;
         constraints.gridy = 1;
-        constraints.ipadx = 400;
-        constraints.ipady = 200;
+        constraints.gridwidth = topButtons.size();
+        constraints.weightx = 1;
+        constraints.weighty = 1;
         chatView.add(messagesView,constraints);
-        constraints.ipadx = 200;
-        constraints.ipady = 1;
-        constraints.gridy = 0;
+        constraints.weighty = 0;
+        constraints.weightx = 1;
+        constraints.gridx = 0;
         constraints.gridy = 2;
-        chatView.add(sendView,constraints);
+        constraints.gridwidth = topButtons.size()-1;
+        constraints.gridheight = 1;
+        chatView.add(sendMessage,constraints);
+        constraints.weightx = 0;
+        constraints.gridx = GridBagConstraints.RELATIVE;
+        constraints.gridy = 2;
+        constraints.gridwidth = 1;
+        constraints.gridheight = 1;
+        chatView.add(sendButton,constraints);
     }
 
     private static void setInitialView(){
