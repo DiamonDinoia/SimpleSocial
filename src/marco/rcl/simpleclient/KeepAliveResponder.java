@@ -78,7 +78,7 @@ public class KeepAliveResponder {
                    byte[] message = KeepAlive.encodeMessage(name,password);
                    response = new DatagramPacket(message,message.length,address,port);
                    // ind order to not flood the server with responses wait a small amount of time
-                   Thread.sleep(random.nextInt(100));
+                   Thread.sleep(random.nextInt(2000));
                    client.send(response);
                    log.info("response sent");
                }

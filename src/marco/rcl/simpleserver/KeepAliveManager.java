@@ -4,10 +4,7 @@ import marco.rcl.shared.Configs;
 import marco.rcl.shared.KeepAlive;
 
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.MulticastSocket;
+import java.net.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ExecutorService;
@@ -39,6 +36,7 @@ public class KeepAliveManager {
     public KeepAliveManager(ConcurrentHashMap<String, User> users, Configs param, ExecutorService ex) {
         this.users = users;
         this.ex = ex;
+
         try {
             // create multicast and receiving socket
             InetAddress group = InetAddress.getByName(param.MulticastGroup);
@@ -48,8 +46,10 @@ public class KeepAliveManager {
             //multicast.joinGroup(group);
             keepAlivePacket = new DatagramPacket(param.KeepAliveMessage.getBytes(),
                     param.KeepAliveMessage.length(), group, (int) param.MulticastPort);
-            server = new DatagramSocket((int) param.DatagramServerPort,
-                    InetAddress.getByName(param.DatagramServerAddress));
+            server = new DatagramSocket(null);
+            SocketAddress sa = new InetSocketAddress(InetAddress.getByName(param.DatagramServerAddress),
+                    (int) param.DatagramServerPort);
+            server.bind(sa);
             server.setReuseAddress(true);
         } catch (IOException e) {
             log.severe("Impossible to start KeepAliveManager " + e.toString());
@@ -118,7 +118,6 @@ public class KeepAliveManager {
      * this function tells to start computing keep-alive request on the multicast
      * Because I expect that the online users a large number. I try to create a good number of receivers threads.
      * Because UDP ha finite buffer and if it is full datagram gets lost.
-     * TODO: allow the userManager to put new Users to the onlineUsers list
      */
     public void startUpdatingStatus(){
        // if already started do nothing
@@ -141,8 +140,8 @@ public class KeepAliveManager {
                     Thread.sleep(TimeUnit.SECONDS.toMillis(12));
                     users.forEach((name,value) -> {
                         if (!onlineUsers.contains(name)) value.setOffLine();
-                        else onlineUsers.remove(name);
                     });
+                    onlineUsers.clear();
                 }
             } catch (IOException | InterruptedException e) {
                 log.severe("problems in computing KeepAlive messages " + e.toString());
