@@ -65,13 +65,15 @@ public class SimpleGUI {
     }
 
     private static void showInitialView(){
-        window.setSize(300,100);
-        containerView.setSize(300,100);
+        window.setMinimumSize(new Dimension(250,100));
+        window.setSize(250,100);
+        containerView.setMinimumSize(new Dimension(250,100));
+        containerView.setSize(250,100);
         cardLayout.show(containerView,viewNames[0]);
     }
     private static void showChatView(){
-        window.setSize(viewDimension);
-        containerView.setSize(viewDimension);
+        window.setMinimumSize(viewDimension);
+        containerView.setMinimumSize(viewDimension);
         cardLayout.show(containerView,viewNames[1]);
     }
 
@@ -116,7 +118,7 @@ public class SimpleGUI {
         GridBagConstraints constraints = new GridBagConstraints();
         constraints.anchor = GridBagConstraints.FIRST_LINE_START;
         chatView.setLayout(layout);
-        chatView.setSize(viewDimension);
+//        chatView.setMinimumSize(viewDimension);
         chatView.setBackground(Color.lightGray);
         initButtons();
         constraints.weightx = 0;
