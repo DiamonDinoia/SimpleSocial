@@ -98,8 +98,8 @@ public class CallbackManager extends RemoteObject implements ServerCallbackManag
             }
             // if the follower is offline or the send fails save the pending content
             if (pendingContents.containsKey(follower))
-                pendingContents.get(follower).add("User: " + user + " Content: " + content);
-            else pendingContents.put(follower, createAndAdd("User: " + user + " Content: " + content));
+                pendingContents.get(follower).add(user + ": " + content);
+            else pendingContents.put(follower, createAndAdd(user + ": " + content));
         }
     }
 

@@ -185,6 +185,7 @@ public class SimpleGUI {
                 case Logout:
                     button.addActionListener( e -> {
                         Client.logout();
+                        messageLabel.setText("");
                         JOptionPane.showMessageDialog(chatView,"Good bye!!");
                         showInitialView();
                     });

@@ -26,12 +26,16 @@ public class CallbackHandler {
     public CallbackHandler(Vector<String> contents, int port) {
         callback = new ContentCallback(contents);
         try {
+            stub = (ClientCallback) UnicastRemoteObject.exportObject(callback,0);
+
             callbackManager = (ServerCallbackManager) LocateRegistry.getRegistry(port)
                     .lookup(ServerCallbackManager.OBJECT_NAME);
-            stub = (ClientCallback) UnicastRemoteObject.exportObject(callback,0);
+
+            System.out.println("esportato");
         } catch (RemoteException | NotBoundException e) {
             e.printStackTrace();
             log.severe("problems with rmi callback manager " + e.toString());
+            throw new RuntimeException(e);
         }
     }
 

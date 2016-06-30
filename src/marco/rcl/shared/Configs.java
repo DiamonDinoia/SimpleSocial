@@ -9,8 +9,7 @@ import java.io.FileReader;
 import java.io.IOException;
 
 /**
- * this interface contains all connection parameters
- * Created by marko on 23/05/2016.
+ * this class reads the config parameters from a JSON file on the disk
  */
 public class Configs {
 
