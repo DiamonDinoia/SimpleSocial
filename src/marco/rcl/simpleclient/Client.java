@@ -95,6 +95,7 @@ public class Client {
         Client.token = null;
         responder.stopResponding();
         handler.close();
+        handler = null;
     }
 
     public static Errors login(String name, String password){
@@ -104,6 +105,7 @@ public class Client {
         log.info("login command sent");
         token = response.getToken();
         if (response.getError()==noErrors){
+            handler = new CallbackHandler(contents, (int) configs.CallbackPort);
             handler.register(name,password,token);
             responder.startResponding(name,password);
         }
@@ -177,7 +179,6 @@ public class Client {
         getConfigs();
         int code = -1;
         tcp = new TCPHandler(configs, friendsRequests,ex);
-        handler = new CallbackHandler(contents, (int) configs.CallbackPort);
         address = tcp.getAddress();
         port = tcp.getPort();
         responder = new KeepAliveResponder(configs);

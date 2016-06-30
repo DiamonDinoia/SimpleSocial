@@ -6,6 +6,7 @@ import java.rmi.RemoteException;
 import java.rmi.server.RemoteObject;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.logging.Logger;
@@ -107,19 +108,20 @@ public class CallbackManager extends RemoteObject implements ServerCallbackManag
     public Errors register(ClientCallback c, String name, String password, Token token) throws RemoteException {
         // check if the user is valid and set his callback
         Errors check = userManager.setCallback(c, name, password, token);
+        boolean flag = true;
         // if there are no errors and the user has pending content, try send him
         if (check == noErrors){
             if (pendingContents.containsKey(name)){
-                ArrayList<String> contents = pendingContents.get(name);
-                for (String content : contents) {
-                    try {
+                Vector<String> contents = new Vector<>(pendingContents.get(name));
+                try {
+                    for (String content : contents) {
                         c.content(content);
-                        contents.remove(content);
-                    } catch (RemoteException e){
-                        log.severe("problem in sending contents" + e.toString());
                     }
+                } catch (RemoteException e){
+                    log.severe("problem in sending contents" + e.toString());
+                    flag=false;
                 }
-                if (contents.isEmpty()) pendingContents.remove(name);
+               if (flag) pendingContents.remove(name);
             }
         }
         log.info("user correctly " + name + " registered");

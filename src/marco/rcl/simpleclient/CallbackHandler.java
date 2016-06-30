@@ -31,7 +31,6 @@ public class CallbackHandler {
             callbackManager = (ServerCallbackManager) LocateRegistry.getRegistry(port)
                     .lookup(ServerCallbackManager.OBJECT_NAME);
 
-            System.out.println("esportato");
         } catch (RemoteException | NotBoundException e) {
             e.printStackTrace();
             log.severe("problems with rmi callback manager " + e.toString());
