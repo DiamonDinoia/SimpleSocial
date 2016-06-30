@@ -198,7 +198,6 @@ class UserManager {
             if (key.toLowerCase().contains(searchUser.toLowerCase()))
                 result.add(user.getName());
         });
-        //TODO: watch out
         if (result.size()==0) return new Response();
         return new Response(result.toArray(new String[result.size()]));
     }
@@ -217,7 +216,7 @@ class UserManager {
         for (String friend : friends) {
             tmp.add(new UserShared(friend,users.get(friend).isOnline()));
         }
-        return new Response((UserShared[]) tmp.toArray());
+        return new Response(tmp.toArray(new UserShared[tmp.size()]));
     }
 
     /**
@@ -305,21 +304,19 @@ class UserManager {
         if (password==null) return new Response(PasswordNotValid);
         Commands code = command.getCommand();
         // names are not case sensitive
-        name = name.toUpperCase();
         if (code == Register) return register(name,password,command.getAddress(),command.getPort());
         if (code == Login) return login(name,password,command.getAddress(),command.getPort());
         if (checkUser(name, password, token) != noErrors) return new Response(checkUser(name,password,token));
         if (code == Logout) return logout(name);
         String friend = command.getUser();
-        if (friend==null) return new Response(UserNotValid);
-        else friend=friend.toUpperCase();
-        if (code == SearchUser) return search(friend);
         if (code == FriendList) return friendList(name);
+        if (code == Publish) return publish(name,command.getContent());
+        if (code == PendingRequests) return getPendingRequests(name);
+        if (friend==null) return new Response(UserNotValid);
+        if (code == SearchUser) return search(friend);
         if (code == FriendRequest) return addFriendRequest(name,friend);
         if (code == FriendConfirm) return confirmRequest(name,friend);
         if (code == FriendIgnore) return ignoreRequest(name,friend);
-        if (code == Publish) return publish(name,command.getContent());
-        if (code == PendingRequests) return getPendingRequests(name);
         return new Response(CommandNotFound);
     }
 

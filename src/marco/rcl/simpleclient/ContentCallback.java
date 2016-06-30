@@ -15,12 +15,12 @@ public class ContentCallback extends RemoteObject implements ClientCallback {
     private Vector<String> contents = null;
 
     public ContentCallback(Vector<String> content) {
-        this.contents = contents;
+        this.contents = content;
     }
 
     /**
      * this function adds the content to the contents list
-     * @param content meessage from the server
+     * @param content message from the server
      */
     @Override
     public void content(String content) throws RemoteException {

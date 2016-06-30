@@ -116,6 +116,10 @@ public class Client {
         Response response = sendCommand(Register);
         log.info("register command sent");
         token = response.getToken();
+        if (response.getError()==noErrors){
+            handler.register(name,password,token);
+            responder.startResponding(name,password);
+        }
         return response.getError();
     }
 
@@ -134,7 +138,7 @@ public class Client {
     }
 
     public static Response friendList(){
-        return sendCommand(SearchUser);
+        return sendCommand(FriendList);
     }
 
     public static Errors followFriend(String user){

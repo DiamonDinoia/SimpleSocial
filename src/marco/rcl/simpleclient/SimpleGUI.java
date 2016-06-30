@@ -59,7 +59,10 @@ public class SimpleGUI {
     }
 
     public static void addMessage(String text){
-        SwingUtilities.invokeLater(() -> messageLabel.append(text));
+        SwingUtilities.invokeLater(() -> {
+            messageLabel.append(text);
+            messageLabel.repaint();
+        });
     }
 
     private static void showInitialView(){
@@ -147,8 +150,6 @@ public class SimpleGUI {
     private static void setInitialView(){
         JButton loginButton = new JButton("Login");
         JButton registerButton = new JButton("Register");
-//        loginButton.setSize(buttonDimensions);
-//        registerButton.setSize(buttonDimensions);
         loginButton.setBackground(Color.WHITE);
         registerButton.setBackground(Color.white);
         loginButton.addActionListener( e -> {
@@ -219,7 +220,10 @@ public class SimpleGUI {
                             JOptionPane.showMessageDialog(chatView,Errors.getError(response.getError()),
                                     "Friend List",JOptionPane.ERROR_MESSAGE);
                         } else {
-                            JOptionPane.showMessageDialog(chatView,response.getFriendList());
+                            if (response.getFriendList()!=null)
+                                JOptionPane.showMessageDialog(chatView,response.getFriendList());
+                            else
+                                JOptionPane.showMessageDialog(chatView,"Empty friend list");
                         }
                     });
                     break;
@@ -227,8 +231,8 @@ public class SimpleGUI {
                     button.addActionListener( e -> {
                         String user = JOptionPane.showInputDialog("Please insert the username");
                         Errors error = Client.followFriend(user);
-                        if (error == noErrors) JOptionPane.showConfirmDialog(chatView, "User followed");
-                        else JOptionPane.showInputDialog(chatView, Errors.getError(error),
+                        if (error == noErrors) JOptionPane.showMessageDialog(chatView, "User followed");
+                        else JOptionPane.showMessageDialog(chatView, Errors.getError(error),
                                 "Follow Friend", JOptionPane.ERROR_MESSAGE);
                     });
                     break;
@@ -240,7 +244,7 @@ public class SimpleGUI {
                                     "Follow Friend", JOptionPane.INFORMATION_MESSAGE);
                         } else {
                             for (String request : response.getUserList()) {
-                                int option = JOptionPane.showConfirmDialog(chatView,request + "wants to be your friend",
+                                int option = JOptionPane.showConfirmDialog(chatView,request + " wants to be your friend",
                                         "Friend request",JOptionPane.YES_NO_OPTION);
                                 if (option==JOptionPane.OK_OPTION){
                                     Client.confimRequest(request);
@@ -258,7 +262,6 @@ public class SimpleGUI {
     private static void initButtons(){
         for (String name : buttonNames.getNames(btn)){
             JButton button = new JButton(name);
-//            button.setSize(buttonDimensions);
             topButtons.put(name,button);
         }
         setListeners();

@@ -10,8 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.logging.Logger;
 
-import static marco.rcl.shared.Errors.UserNotValid;
-import static marco.rcl.shared.Errors.noErrors;
+import static marco.rcl.shared.Errors.*;
 
 /**
  * this class manages callbacks from and to the clients
@@ -39,15 +38,16 @@ public class CallbackManager extends RemoteObject implements ServerCallbackManag
         this.friendManager = friendManager;
         this.userManager = userManager;
         this.pendingContentsFile = config.PendingContents;
-        this.followersFile = config.CallbackFileName;
+        this.followersFile = config.FollowersFileName;
         this.backupInterval = config.BackupInterval;
         this.ex = ex;
-        this.followers = DiskManager.RestoreFriendList(config.CallbackFileName);
+        this.followers = DiskManager.RestoreFriendList(config.FollowersFileName);
         // if something goes wrong there nothing there's no recovery, aborting
         if (followers == null){
             log.severe("problems in restoring callback file");
             throw new RuntimeException("error in restoring callback file, aborting");
         }
+        // if something goes wrong there nothing there's no recovery, aborting
         this.pendingContents = DiskManager.RestoreFriendList(config.PendingContents);
         if (pendingContents == null){
             log.severe("problems in restoring pending contents file");
@@ -67,6 +67,7 @@ public class CallbackManager extends RemoteObject implements ServerCallbackManag
         return tmp;
     }
 
+
     /**
      * this function send the contents to the followers by theru callbacks
      * @param user  the publisher
@@ -74,7 +75,7 @@ public class CallbackManager extends RemoteObject implements ServerCallbackManag
      */
     public void publish(String user, String content){
         // get the followers of the publisher
-        ArrayList<String> userFollowers = (ArrayList<String>) followers.get(user);
+        ArrayList<String> userFollowers = followers.get(user);
         // if the user has no followers
         if (userFollowers==null) return;
         // if the user has followers
@@ -86,7 +87,7 @@ public class CallbackManager extends RemoteObject implements ServerCallbackManag
             if (c != null) {
                 // try to send him the content
                 try {
-                    c.content("User: " + user + " Content: " + content + '\n');
+                    c.content(user + ": " + content);
                     log.info("content correctly sent to " + user);
                     // if ok go to the next follower
                     continue;
@@ -132,6 +133,7 @@ public class CallbackManager extends RemoteObject implements ServerCallbackManag
         Errors check = userManager.checkUser(name, password, token);
         if (check != noErrors) return check;
         // a user can follow only one of his friends
+        if (friendManager.getFriendList(name)==null)return UserNotValid;
         if (Arrays.asList(friendManager.getFriendList(name)).contains(friendName)){
             if (followers.containsKey(friendName)) followers.get(friendName).add(name);
             else followers.put(friendName,createAndAdd(name));

@@ -8,9 +8,10 @@ import java.rmi.RemoteException;
  */
 public interface ServerCallbackManager extends Remote {
 
-    public static final String OBJECT_NAME = "CALLBACK_MANAGER";
+    String OBJECT_NAME = "CALLBACK_MANAGER";
 
     Errors register(ClientCallback c, String name, String password, Token token) throws RemoteException;
+
     Errors follow(String friendName, String name, String password, Token token) throws RemoteException;
 
 

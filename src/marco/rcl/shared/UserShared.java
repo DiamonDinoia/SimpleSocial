@@ -27,6 +27,6 @@ public class UserShared  implements Serializable{
 
     @Override
     public String toString() {
-        return name + " " + status;
+        return "name: " + name + " status: " + (status ? "on-line" : "off-line") ;
     }
 }

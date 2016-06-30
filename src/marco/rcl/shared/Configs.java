@@ -26,9 +26,11 @@ public class Configs {
     public final String FriendshipFile;
     public final long RequestValidity;
     public final long BackupInterval;
-    public final String CallbackFileName;
+    public final String FollowersFileName;
+    public final String FollowingFileName;
     public final String PendingContents;
     public final long CallbackPort;
+
     public Configs() throws IOException, ParseException {
         String fileName = "config.cfg";
         try (FileReader reader = new FileReader(fileName)) {
@@ -46,9 +48,10 @@ public class Configs {
             FriendshipFile = (String) json.get("FriendshipFile");
             RequestValidity = (long) json.get("RequestValidity");
             BackupInterval = (long) json.get("BackupInterval");
-            CallbackFileName = (String) json.get("CallbackFileName");
+            FollowersFileName = (String) json.get("FollowersFileName");
             PendingContents = (String) json.get("PendingContents");
             CallbackPort = (long) json.get("CallbackPort");
+            FollowingFileName = (String) json.get("FollowingFileName");
         }
     }
 
@@ -68,9 +71,10 @@ public class Configs {
             FriendshipFile = (String) json.get("FriendshipFile");
             RequestValidity = (long) json.get("RequestValidity");
             BackupInterval = (long) json.get("BackupInterval");
-            CallbackFileName = (String) json.get("CallbackFileName");
+            FollowersFileName = (String) json.get("FollowersFileName");
             PendingContents = (String) json.get("PendingContents");
             CallbackPort = (long) json.get("CallbackPort");
+            FollowingFileName = (String) json.get("FollowingFileName");
         }
     }
 }

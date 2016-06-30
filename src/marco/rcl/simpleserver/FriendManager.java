@@ -157,8 +157,9 @@ public class FriendManager {
      * @return null or the friendList
      */
     public String[] getFriendList(String name){
-        log.info("asked a friendlist by " + name);
-        return (String[]) friendships.get(name).toArray();
+        log.info("asked a friend list by " + name);
+        if (friendships.get(name)==null)return null;
+        return friendships.get(name).toArray(new String[friendships.get(name).size()]);
     }
 
     /**
@@ -171,7 +172,7 @@ public class FriendManager {
         if (!pendingRequests.containsKey(name)) return null;
         pendingRequests.get(name).values().removeIf( (timestamp) ->
             System.currentTimeMillis() - timestamp > requestValidity);
-        return (String[]) Collections.list(pendingRequests.keys()).toArray();
+        return pendingRequests.get(name).keySet().toArray(new String[pendingRequests.get(name).size()]);
     }
 
     /**

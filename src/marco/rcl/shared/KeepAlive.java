@@ -6,7 +6,7 @@ package marco.rcl.shared;
 public class KeepAlive {
 
     public static byte[] encodeMessage(String name,String password){
-        return  (name.toUpperCase() + " " + password + " " + System.currentTimeMillis() + " ").getBytes();
+        return  (name + " " + password + " " + System.currentTimeMillis() + " ").getBytes();
     }
 
     public static String[] decodeMessage(byte[] message){
