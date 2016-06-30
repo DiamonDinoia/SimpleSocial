@@ -27,7 +27,6 @@ class UserManager {
     private ConcurrentHashMap<String,User> users;
     private final static String userFilename = "./ServerData/Users.ser";
     private ExecutorService ex;
-    private boolean append = false;
     private FriendManager friendManager;
     private CallbackManager callbackManager;
     private KeepAliveManager keepAliveManager;
@@ -75,11 +74,10 @@ class UserManager {
      * @param u the new user to be saved on the disk
      */
     private synchronized void updateUserFile(User u){
-        if (DiskManager.updateUserFile(u, userFilename, append)){
+        if (DiskManager.updateUserFile(u, userFilename)){
             log.severe("failed storing users, aborting");
             throw new RuntimeException("problems in storing user");
         }
-        append = true;
     }
 
     /**
@@ -200,8 +198,9 @@ class UserManager {
             if (key.toLowerCase().contains(searchUser.toLowerCase()))
                 result.add(user.getName());
         });
+        //TODO: watch out
         if (result.size()==0) return new Response();
-        return new Response((String[]) result.toArray());
+        return new Response(result.toArray(new String[result.size()]));
     }
 
 
@@ -232,6 +231,7 @@ class UserManager {
             BufferedWriter writer = null;
         try (Socket socket = new Socket()){
             User u = users.get(receiver);
+            if (u==null) return new Response(UserNotRegistered);
             if (!u.isOnline()) return new Response(UserOffline);
             SocketAddress sa = new InetSocketAddress(u.getAddress(),u.getPort());
             socket.connect(sa, (int) TimeUnit.MINUTES.toMillis(1));
@@ -276,7 +276,7 @@ class UserManager {
      * @return confirm message
      */
     private Response publish(String name, String content){
-        if (content==null) return new Response(ContentNotValid);
+        if (content==null || content.equals("")) return new Response(ContentNotValid);
         callbackManager.publish(name, content);
         return new Response(noErrors);
     }
@@ -312,6 +312,7 @@ class UserManager {
         if (code == Logout) return logout(name);
         String friend = command.getUser();
         if (friend==null) return new Response(UserNotValid);
+        else friend=friend.toUpperCase();
         if (code == SearchUser) return search(friend);
         if (code == FriendList) return friendList(name);
         if (code == FriendRequest) return addFriendRequest(name,friend);

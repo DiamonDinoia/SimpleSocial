@@ -10,8 +10,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import static java.lang.Enum.valueOf;
-import static marco.rcl.shared.Errors.noErrors;
+import static marco.rcl.shared.Errors.*;
 import static marco.rcl.simpleclient.SimpleGUI.buttonNames.*;
 
 /**
@@ -20,8 +19,8 @@ import static marco.rcl.simpleclient.SimpleGUI.buttonNames.*;
 public class SimpleGUI {
 
     private static boolean isStarted = false;
-    private static Dimension buttonDimensions = new Dimension(400,20);
-    private static Dimension viewDimension = new Dimension(600,500);
+//    private static Dimension buttonDimensions = new Dimension(400,20);
+    private static Dimension viewDimension = new Dimension(620,500);
     private static JFrame window = new JFrame("Simple-Chat");
     private static JTextArea messageLabel = new JTextArea(1,1);
     private static JTextField sendMessage = new JTextField(1);
@@ -29,12 +28,10 @@ public class SimpleGUI {
     private static JPanel containerView = new JPanel();
     private static JPanel initialView = new JPanel();
     private static JPanel chatView = new JPanel();
-    private static JPanel buttonsView = new JPanel();
     private static JScrollPane messagesView = new JScrollPane(messageLabel,JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
             JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-    private static JPanel sendView = new JPanel();
     private static CardLayout cardLayout = new CardLayout();
-    private static HashMap<String,JButton> topButtons = new HashMap<>(5);
+    private static HashMap<String,JButton> topButtons = new HashMap<>(6);
     private static String[] viewNames = {"initialView","chatView"};
 
     private static buttonNames btn = new buttonNames();
@@ -45,6 +42,7 @@ public class SimpleGUI {
         static final String AddFriend = "Add Friend";
         static final String FriendList = "Friend List";
         static final String FollowFriend = "Follow Friend";
+        static final String FriendRequests = "Friend Requests";
 
         static String[] getNames(buttonNames names){
             if (names==null) return null;
@@ -61,7 +59,7 @@ public class SimpleGUI {
     }
 
     public static void addMessage(String text){
-        messageLabel.append(text);
+        SwingUtilities.invokeLater(() -> messageLabel.append(text));
     }
 
     private static void showInitialView(){
@@ -77,25 +75,12 @@ public class SimpleGUI {
         cardLayout.show(containerView,viewNames[1]);
     }
 
-    private static void setButtonsView(){
-        buttonsView.setLayout(new FlowLayout());
-    }
 
     private static void setMessageView(){
         messageLabel.setEditable(false);
         messageLabel.setBackground(Color.WHITE);
     }
 
-
-    private static void setSendView(){
-        sendView.setLayout(new FlowLayout());
-        sendMessage.setSize(viewDimension.width-buttonDimensions.width,buttonDimensions.height);
-        sendView.setSize(viewDimension.width,buttonDimensions.height);
-        sendMessage.setSize(viewDimension.width - buttonDimensions.width,buttonDimensions.height);
-        sendMessage.setBackground(Color.white);
-        sendView.add(sendMessage);
-        sendView.add(sendButton);
-    }
 
     private static void setLayout(){
         initialView.setLayout(new FlowLayout());
@@ -118,7 +103,6 @@ public class SimpleGUI {
         GridBagConstraints constraints = new GridBagConstraints();
         constraints.anchor = GridBagConstraints.FIRST_LINE_START;
         chatView.setLayout(layout);
-//        chatView.setMinimumSize(viewDimension);
         chatView.setBackground(Color.lightGray);
         initButtons();
         constraints.weightx = 0;
@@ -151,11 +135,20 @@ public class SimpleGUI {
         chatView.add(sendButton,constraints);
     }
 
+    private static void setSendListener(){
+        String content = sendMessage.getText();
+        if (content==null || content.equals(""))return;
+        content += '\n';
+        sendMessage.setText("");
+        Client.publish(content);
+        messageLabel.append("me: " + content);
+    }
+
     private static void setInitialView(){
         JButton loginButton = new JButton("Login");
         JButton registerButton = new JButton("Register");
-        loginButton.setSize(buttonDimensions);
-        registerButton.setSize(buttonDimensions);
+//        loginButton.setSize(buttonDimensions);
+//        registerButton.setSize(buttonDimensions);
         loginButton.setBackground(Color.WHITE);
         registerButton.setBackground(Color.white);
         loginButton.addActionListener( e -> {
@@ -198,19 +191,24 @@ public class SimpleGUI {
                 case SearchUser:
                     button.addActionListener( e -> {
                         String user = JOptionPane.showInputDialog("Please insert the username");
+                        if (user==null || user.equals("") ) return;
                         Response response = Client.searchUser(user);
-                        if (response.getError()==noErrors)
-                            JOptionPane.showMessageDialog(chatView,response.getUserList());
-                        else JOptionPane.showInputDialog(chatView,Errors.getError(response.getError()),
+                        if (response.getError()==noErrors){
+                            if (response.getUserList() == null){
+                                JOptionPane.showMessageDialog(chatView,"User not found");
+                            } else JOptionPane.showMessageDialog(chatView,response.getUserList());
+                        }
+                        else JOptionPane.showMessageDialog(chatView,Errors.getError(response.getError()),
                                 "Search Error",JOptionPane.ERROR_MESSAGE);
                     });
                     break;
                 case AddFriend:
                     button.addActionListener( e -> {
                         String user = JOptionPane.showInputDialog("Please insert the username");
+                        if (user==null || user.equals("") ) return;
                         Errors error = Client.addFriend(user);
-                        if (error==noErrors) JOptionPane.showConfirmDialog(chatView,"Request sent");
-                        else JOptionPane.showInputDialog(chatView,Errors.getError(error),
+                        if (error==noErrors) JOptionPane.showMessageDialog(chatView,"Request sent");
+                        else JOptionPane.showMessageDialog(chatView,Errors.getError(error),
                                 "Add Friend",JOptionPane.ERROR_MESSAGE);
                     });
                     break;
@@ -233,19 +231,37 @@ public class SimpleGUI {
                         else JOptionPane.showInputDialog(chatView, Errors.getError(error),
                                 "Follow Friend", JOptionPane.ERROR_MESSAGE);
                     });
+                    break;
+                case FriendRequests:
+                    button.addActionListener(e -> {
+                        Response response =  Client.friendRequests();
+                        if (response.getUserList()==null){
+                            JOptionPane.showMessageDialog(chatView, "You have no requests!",
+                                    "Follow Friend", JOptionPane.INFORMATION_MESSAGE);
+                        } else {
+                            for (String request : response.getUserList()) {
+                                int option = JOptionPane.showConfirmDialog(chatView,request + "wants to be your friend",
+                                        "Friend request",JOptionPane.YES_NO_OPTION);
+                                if (option==JOptionPane.OK_OPTION){
+                                    Client.confimRequest(request);
+                                } else Client.ignoreRequest(request);
+                            }
+                        }
+                    });
             }
         });
+        sendButton.addActionListener(e -> setSendListener());
+        sendMessage.addActionListener(e -> setSendListener());
+
     }
 
     private static void initButtons(){
         for (String name : buttonNames.getNames(btn)){
             JButton button = new JButton(name);
-            button.setSize(buttonDimensions);
-            buttonsView.add(name,button);
+//            button.setSize(buttonDimensions);
             topButtons.put(name,button);
         }
         setListeners();
-        sendButton.setSize(buttonDimensions);
     }
 
 
@@ -257,9 +273,7 @@ public class SimpleGUI {
         setViews();
         setInitialView();
         showInitialView();
-        setButtonsView();
         setMessageView();
-        setSendView();
         setChatView();
     }
 

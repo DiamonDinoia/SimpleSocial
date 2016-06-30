@@ -15,6 +15,7 @@ import java.util.concurrent.Executors;
 import java.util.logging.Logger;
 
 import static marco.rcl.shared.Commands.*;
+import static marco.rcl.shared.Errors.*;
 
 public class Client {
 
@@ -24,6 +25,8 @@ public class Client {
     private static Vector<String> friendsRequests = new Vector<>();
     private static ExecutorService ex = Executors.newCachedThreadPool();
     private static Vector<String> contents = new Vector<>();
+
+
     private static Scanner scanner = new Scanner(System.in);
     private static String name, password;
     private static TCPHandler tcp = null;
@@ -35,8 +38,15 @@ public class Client {
     private static String user = null;
     private static String content = null;
 
+    public static ExecutorService getExecutorService() {
+        return ex;
+    }
     public static Logger getLog() {
         return log;
+    }
+
+    public static void submit(Runnable r){
+        ex.submit(r);
     }
 
     private static void getConfigs(){
@@ -79,10 +89,12 @@ public class Client {
                 .setPort(port));
     }
     public static void logout(){
-        Response response = sendCommand(Logout);
+        sendCommand(Logout);
         Client.name = null;
         Client.password = null;
         Client.token = null;
+        responder.stopResponding();
+        handler.close();
     }
 
     public static Errors login(String name, String password){
@@ -91,6 +103,10 @@ public class Client {
         Response response = sendCommand(Login);
         log.info("login command sent");
         token = response.getToken();
+        if (response.getError()==noErrors){
+            handler.register(name,password,token);
+            responder.startResponding(name,password);
+        }
         return response.getError();
     }
 
@@ -125,6 +141,28 @@ public class Client {
         return handler.follow(user,name,password,token);
     }
 
+    public static Errors publish(String content){
+        Client.content = content;
+        Response response = sendCommand(Publish);
+        Client.content = null;
+        return response.getError();
+    }
+
+    public static Response friendRequests() {
+        return sendCommand(PendingRequests);
+    }
+
+    public static void confimRequest(String user){
+        Client.user = user;
+        sendCommand(FriendConfirm);
+        Client.user = null;
+    }
+    public static void ignoreRequest(String user){
+        Client.user = user;
+        sendCommand(FriendIgnore);
+        Client.user = null;
+    }
+
     public static void main(String[] args) {
         try {log =  LoggerFactory.getLogger("clientLogger","client");
         } catch (IOException e) {
@@ -138,12 +176,10 @@ public class Client {
         handler = new CallbackHandler(contents, (int) configs.CallbackPort);
         address = tcp.getAddress();
         port = tcp.getPort();
+        responder = new KeepAliveResponder(configs);
         tcp.startReceiving();
         log.info("client started");
         SimpleGUI.startView();
-        responder = new KeepAliveResponder(configs,ex,name,password);
-        responder.startResponding();
-        handler.register(name,password,token);
     }
 }
 

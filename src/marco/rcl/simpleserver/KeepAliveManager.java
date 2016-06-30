@@ -91,9 +91,11 @@ public class KeepAliveManager {
                     // response
                     if ((System.currentTimeMillis() - new Long(message[2])) <= TimeUnit.SECONDS.toMillis(10)){
                         onlineUsers.add(message[0]);
-                        log.info("user online");
+                        log.info("user: " + message[0] + " online");
+                    } else {
+                        log.info("user: " + message[0] + " offline");
+
                     }
-                    log.info( Thread.currentThread().getName() + ": received a packet from user: " + message[0]);
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -132,6 +134,7 @@ public class KeepAliveManager {
                     ex.submit(this::receivingTask);
                 }
                 while (computing){
+                    Thread.sleep(TimeUnit.SECONDS.toMillis(10));
                     // check if the receiving threads are enough
                     // send the keep-alive request in multicast
                     multicast.send(keepAlivePacket);
@@ -140,8 +143,8 @@ public class KeepAliveManager {
                     Thread.sleep(TimeUnit.SECONDS.toMillis(12));
                     users.forEach((name,value) -> {
                         if (!onlineUsers.contains(name)) value.setOffLine();
+                        else onlineUsers.remove(name);
                     });
-                    onlineUsers.clear();
                 }
             } catch (IOException | InterruptedException e) {
                 log.severe("problems in computing KeepAlive messages " + e.toString());

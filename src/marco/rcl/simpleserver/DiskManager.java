@@ -13,7 +13,7 @@ import java.util.logging.Logger;
 public class DiskManager {
 
     private static Logger log = Server.getLog();
-
+    private static boolean append = true;
     /**
      * restores the hashMap from the disk
      * @param userFilename name and path of the file containing all the registered users
@@ -21,14 +21,10 @@ public class DiskManager {
      */
     public static ConcurrentHashMap<String,User> restoreFromDisk(String userFilename) {
         ConcurrentHashMap<String, User> registeredUsers = new ConcurrentHashMap<>();
-        ObjectInputStream in=null;
-        FileInputStream fi=null;
-        String last_name = null;
         boolean recover = false;
-        try {
-            // try to read the entire file
-            fi = new FileInputStream(userFilename);
-            in = new ObjectInputStream(fi);
+        try(// try to read the entire file
+            FileInputStream fi = new FileInputStream(userFilename);
+            ObjectInputStream in = new ObjectInputStream(fi)) {
             User user;
             // this is no the best way to read the entire file, the most correct way is to save on the file some
             // metadata (such as the last saved user or the number of the users) in order to check if the file
@@ -55,11 +51,10 @@ public class DiskManager {
             registeredUsers = null;
             // closing everything before returning
         } finally {
-            if (in != null) try {in.close();} catch (IOException ignored) {}
-            if (fi != null) try {fi.close();} catch (IOException ignored) {}
             if (recover && registeredUsers.size()<=0) {
                 try {
                     Files.delete(FileSystems.getDefault().getPath(userFilename));
+                    append = false;
                     log.severe("successfully recovered");
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -76,10 +71,9 @@ public class DiskManager {
      * this function store user's data on the disk in order to prevent data loss in case of crash or exit
      * @param u user to store
      * @param userFilename file in which store
-     * @param append boolean says if append at the end or overwrite the file
      * @return true in case of error false otherwise
      */
-    public static boolean updateUserFile(User u, String userFilename, boolean append ){
+    public static boolean updateUserFile(User u, String userFilename){
         FileOutputStream fo = null;
         AppendingObjectOutputStream outAppend = null;
         ObjectOutputStream out = null;
@@ -94,6 +88,7 @@ public class DiskManager {
             }else {
                 out = new ObjectOutputStream(fo);
                 out.writeObject(u);
+                append=true;
             }
             log.info("update terminated");
         // if there is an error, modifies can't be saved, terminate and start a new session
@@ -176,13 +171,10 @@ public class DiskManager {
      * @return true in case of error false otherwise
      */
     public static boolean dumpFriendList(ConcurrentHashMap<String,ArrayList<String>> friendList, String fileName ){
-        FileOutputStream fo = null;
-        ObjectOutputStream out = null;
         log.info("dump started");
         boolean error = false;
-        try {
-            fo = new FileOutputStream(fileName);
-            out = new ObjectOutputStream(fo);
+        try (FileOutputStream fo = new FileOutputStream(fileName);
+            ObjectOutputStream out =  new ObjectOutputStream(fo)) {
             out.writeObject(friendList);
             log.info("dump correctly terminated");
         } catch (FileNotFoundException e) {
@@ -193,13 +185,6 @@ public class DiskManager {
             log.severe("error in dump friendList " + e.toString());
             e.printStackTrace();
             error = true;
-        } finally {
-            // cleaning up and returning
-            try {
-                if (out != null) out.close();
-                if (fo != null) fo.close();
-                // instruction added only to silence code duplicate warning
-            } catch (IOException ignored) {ignored.toString();}
         }
         return error;
     }

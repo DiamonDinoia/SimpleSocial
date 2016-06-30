@@ -24,18 +24,14 @@ public class KeepAliveResponder {
     private DatagramPacket response;
     private ExecutorService ex;
     private boolean responding = false;
-    private String name;
     private InetAddress address;
     private int port;
     private final static Logger log = Client.getLog();
-    private String password;
     /**
      * constructor tries to set everything up and if something goes wrong exits
      * @param param config param structure
-     * @param ex executor service
-     * @param name user name
      */
-    public KeepAliveResponder(Configs param, ExecutorService ex, String name, String password) {
+    public KeepAliveResponder(Configs param) {
         try {
             InetAddress group = InetAddress.getByName(param.MulticastGroup);
             multicast = new MulticastSocket((int) param.MulticastPort);
@@ -52,17 +48,15 @@ public class KeepAliveResponder {
             e.printStackTrace();
             throw new RuntimeException(e);
         }
-        this.name = name;
-        this.ex = ex;
         this.port = (int) param.DatagramServerPort;
-        this.password = password;
+        ex = Client.getExecutorService();
         log.info("keep alive responder correctly started");
     }
 
     /**
      * this function initiates the keepaliveresponder to send keepalive responses
      */
-    public void startResponding(){
+    public void startResponding(String name, String password){
         if (responding) return;
         responding = true;
         log.info("Started responding");
@@ -77,7 +71,7 @@ public class KeepAliveResponder {
                    // encode the response
                    byte[] message = KeepAlive.encodeMessage(name,password);
                    response = new DatagramPacket(message,message.length,address,port);
-                   // ind order to not flood the server with responses wait a small amount of time
+                   // in order to not flood the server with responses wait a small amount of time
                    Thread.sleep(random.nextInt(2000));
                    client.send(response);
                    log.info("response sent");
