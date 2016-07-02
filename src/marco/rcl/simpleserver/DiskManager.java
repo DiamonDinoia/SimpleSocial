@@ -41,7 +41,7 @@ public class DiskManager {
                 log.severe("error from restoring registered users file damaged... try to recovering  " + e.toString());
                 recover = true;
             }
-        // if the file not exists is not an error, it means there are no registerd users
+        // if the file not exists is not an error, it means there are no registered users
         } catch (FileNotFoundException e){
             log.info("Registered users file not exists, no user registered");
         // this is sure an error
@@ -85,7 +85,7 @@ public class DiskManager {
             if(append){
                 outAppend = new AppendingObjectOutputStream(fo);
                 outAppend.writeObject(u);
-            }else {
+            } else {
                 out = new ObjectOutputStream(fo);
                 out.writeObject(u);
                 append=true;
@@ -116,7 +116,7 @@ public class DiskManager {
      * @param fileName file in which store the friend list
      * @return null if something went wrong the hashMap if everything OK
      */
-    public static ConcurrentHashMap<String,ArrayList<String>> RestoreFriendList(String fileName){
+    public static ConcurrentHashMap<String,ArrayList<String>> RestoreFromDisk(String fileName){
         FileInputStream fi = null;
         ObjectInputStream in = null;
         ConcurrentHashMap<String,ArrayList<String>> friends = null;
@@ -125,9 +125,7 @@ public class DiskManager {
             fi = new FileInputStream(fileName);
             in = new ObjectInputStream(fi);
             Object check  = in.readObject();
-            if (check instanceof ConcurrentHashMap ){
-                friends = (ConcurrentHashMap<String,ArrayList<String>>) check;
-            }
+            friends = (ConcurrentHashMap<String,ArrayList<String>>) check;
             log.info("friend list correctly restored");
         } catch (FileNotFoundException e) {
             log.info("Friend file list not exists creating a new one");
@@ -170,7 +168,7 @@ public class DiskManager {
      * @param fileName file in which dump the friend list
      * @return true in case of error false otherwise
      */
-    public static boolean dumpFriendList(ConcurrentHashMap<String,ArrayList<String>> friendList, String fileName ){
+    public static boolean saveToDisk(ConcurrentHashMap<String,ArrayList<String>> friendList, String fileName ){
         log.info("dump started");
         boolean error = false;
         try (FileOutputStream fo = new FileOutputStream(fileName);

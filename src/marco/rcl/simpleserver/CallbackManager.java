@@ -41,14 +41,14 @@ public class CallbackManager extends RemoteObject implements ServerCallbackManag
         this.pendingContentsFile = config.PendingContents;
         this.followersFile = config.FollowersFileName;
         this.backupInterval = config.BackupInterval;
-        this.followers = DiskManager.RestoreFriendList(config.FollowersFileName);
+        this.followers = DiskManager.RestoreFromDisk(config.FollowersFileName);
         // if something goes wrong there nothing there's no recovery, aborting
         if (followers == null){
             log.severe("problems in restoring callback file");
             throw new RuntimeException("error in restoring callback file, aborting");
         }
         // if something goes wrong there nothing there's no recovery, aborting
-        this.pendingContents = DiskManager.RestoreFriendList(config.PendingContents);
+        this.pendingContents = DiskManager.RestoreFromDisk(config.PendingContents);
         if (pendingContents == null){
             log.severe("problems in restoring pending contents file");
             throw new RuntimeException("error in restoring pending contents file, aborting");
@@ -158,11 +158,11 @@ public class CallbackManager extends RemoteObject implements ServerCallbackManag
         ex.submit(() -> {
             try {
                 while (backing){
-                    if (DiskManager.dumpFriendList(followers,followersFile)) {
+                    if (DiskManager.saveToDisk(followers,followersFile)) {
                         log.severe("failed saving follower list on the disk");
                         throw new RuntimeException("failed saving follower list on the disk");
                     }
-                    if (DiskManager.dumpFriendList(pendingContents,pendingContentsFile)){
+                    if (DiskManager.saveToDisk(pendingContents,pendingContentsFile)){
                         log.severe("failed saving pending contents on the disk");
                         throw new RuntimeException("failed saving pending contents on the disk");
                     }

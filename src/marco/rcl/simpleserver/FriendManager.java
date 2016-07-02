@@ -3,10 +3,8 @@ package marco.rcl.simpleserver;
 
 import marco.rcl.shared.Configs;
 import marco.rcl.shared.Errors;
-import marco.rcl.simpleclient.TCPHandler;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -34,7 +32,7 @@ public class FriendManager {
      * @param param structure of configuration parameters
      */
     public FriendManager(Configs param) {
-        friendships = DiskManager.RestoreFriendList(param.FriendshipFile);
+        friendships = DiskManager.RestoreFromDisk(param.FriendshipFile);
         if (friendships == null){
             log.severe("friendships restore failed");
             throw new RuntimeException("problems during friendships restore");
@@ -213,7 +211,7 @@ public class FriendManager {
         ex.submit(() -> {
             try {
                 while (dumping){
-                    if(DiskManager.dumpFriendList(friendships,fileName)){
+                    if(DiskManager.saveToDisk(friendships,fileName)){
                         log.severe("failed performing a backup");
                         throw new RuntimeException("failed saving friendships exiting");
                     }
