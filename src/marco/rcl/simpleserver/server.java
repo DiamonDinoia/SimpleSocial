@@ -12,12 +12,14 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.rmi.NoSuchObjectException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 public class Server {
@@ -26,6 +28,11 @@ public class Server {
     private static Configs configs = null;
     private static final String directory = "./ServerData";
     private static final String logDirectory = "./logs";
+    private static ExecutorService executorService = Executors.newCachedThreadPool();
+
+    public static ExecutorService getExecutorService() {
+        return executorService;
+    }
 
     private static void getConfigs(){
         try {configs = new Configs();} catch (IOException | ParseException e) {
@@ -58,20 +65,19 @@ public class Server {
         getConfigs();
         setUp(directory);
         setUp(logDirectory);
-        ExecutorService ex = Executors.newCachedThreadPool();
-        FriendManager friendManager = new FriendManager(configs, ex);
-        UserManager userManager = new UserManager(ex,friendManager);
-        KeepAliveManager keepAliveManager = new KeepAliveManager(userManager.getUsers(),configs,ex);
-        ConnectionManager connectionManager = new ConnectionManager(configs,ex,userManager);
-        CallbackManager callbackManager = new CallbackManager(friendManager,userManager,configs,ex);
+        FriendManager friendManager = new FriendManager(configs);
+        UserManager userManager = new UserManager(friendManager);
+        KeepAliveManager keepAliveManager = new KeepAliveManager(userManager.getUsers(),configs);
+        ConnectionManager connectionManager = new ConnectionManager(configs,userManager);
+        CallbackManager callbackManager = new CallbackManager(friendManager,userManager,configs);
         try {
             ServerCallbackManager cm = (ServerCallbackManager) UnicastRemoteObject.exportObject(callbackManager,(int)configs.CallbackPort);
             Registry registry = LocateRegistry.createRegistry((int)configs.CallbackPort);
             registry.rebind(ServerCallbackManager.OBJECT_NAME, cm);
             log.info("Callback manager ready");
         } catch (RemoteException e) {
-            e.printStackTrace();
             log.severe("problems with RMI" + e.toString());
+            throw new RuntimeException(e);
         }
         userManager
                 .setCallbackManager(callbackManager)
@@ -82,20 +88,28 @@ public class Server {
         keepAliveManager.startUpdatingStatus();
         connectionManager.startManaging();
         log.info("finished starting");
+        configs=null;
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(System.in))){
             System.out.println("write something to exit");
             reader.readLine();
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        friendManager.stopRemovingExpiredRequests();
-        friendManager.stopDumpingFriendships();
+        friendManager.close();
         callbackManager.stopBackup();
-        keepAliveManager.stopUpdatingStatus();
-        connectionManager.stopManaging();
+        keepAliveManager.close();
         connectionManager.close();
-        ex.shutdownNow();
+        try {
+            UnicastRemoteObject.unexportObject(callbackManager,true);
+        } catch (NoSuchObjectException e) {
+            e.printStackTrace();
+        }
+        executorService.shutdown();
+        try {
+            executorService.awaitTermination(5, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            executorService.shutdownNow();
+        }
     }
 
 

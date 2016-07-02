@@ -209,6 +209,10 @@ public class SimpleGUI {
                         String user = JOptionPane.showInputDialog("Please insert the username");
                         if (user==null || user.equals("") ) return;
                         Response response = Client.searchUser(user);
+                        if (response.getError()==UserNotLogged){
+                            showInitialView();
+                            return;
+                        }
                         if (response.getError()==noErrors){
                             if (response.getUserList() == null){
                                 JOptionPane.showMessageDialog(chatView,"User not found");
@@ -223,6 +227,10 @@ public class SimpleGUI {
                         String user = JOptionPane.showInputDialog("Please insert the username");
                         if (user==null || user.equals("") ) return;
                         Errors error = Client.addFriend(user);
+                        if (error==UserNotLogged){
+                            showInitialView();
+                            return;
+                        }
                         if (error==noErrors) JOptionPane.showMessageDialog(chatView,"Request sent");
                         else JOptionPane.showMessageDialog(chatView,Errors.getError(error),
                                 "Add Friend",JOptionPane.ERROR_MESSAGE);
@@ -231,6 +239,10 @@ public class SimpleGUI {
                 case FriendList:
                     button.addActionListener( e -> {
                         Response response = Client.friendList();
+                        if (response.getError()==UserNotLogged){
+                            showInitialView();
+                            return;
+                        }
                         if (response.getError()!= noErrors){
                             JOptionPane.showMessageDialog(chatView,Errors.getError(response.getError()),
                                     "Friend List",JOptionPane.ERROR_MESSAGE);
@@ -246,6 +258,10 @@ public class SimpleGUI {
                     button.addActionListener( e -> {
                         String user = JOptionPane.showInputDialog("Please insert the username");
                         Errors error = Client.followFriend(user);
+                        if (error==UserNotLogged){
+                            showInitialView();
+                            return;
+                        }
                         if (error == noErrors) JOptionPane.showMessageDialog(chatView, "User followed");
                         else JOptionPane.showMessageDialog(chatView, Errors.getError(error),
                                 "Follow Friend", JOptionPane.ERROR_MESSAGE);
@@ -254,6 +270,10 @@ public class SimpleGUI {
                 case FriendRequests:
                     button.addActionListener(e -> {
                         Response response =  Client.friendRequests();
+                        if (response.getError()==UserNotLogged){
+                            showInitialView();
+                            return;
+                        }
                         if (response.getUserList()==null){
                             JOptionPane.showMessageDialog(chatView, "You have no requests!",
                                     "Follow Friend", JOptionPane.INFORMATION_MESSAGE);

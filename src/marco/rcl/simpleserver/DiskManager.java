@@ -13,7 +13,7 @@ import java.util.logging.Logger;
 public class DiskManager {
 
     private static Logger log = Server.getLog();
-    private static boolean append = true;
+    private static boolean append = false;
     /**
      * restores the hashMap from the disk
      * @param userFilename name and path of the file containing all the registered users
