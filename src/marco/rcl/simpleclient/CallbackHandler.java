@@ -10,7 +10,6 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.Vector;
 import java.util.logging.Logger;
 
 /**
@@ -20,17 +19,12 @@ public class CallbackHandler {
 
     private ServerCallbackManager callbackManager;
     private ClientCallback callback;
-    private ClientCallback stub;
     private static final Logger log = Client.getLog();
 
-    public CallbackHandler(Vector<String> contents, int port) {
-        callback = new ContentCallback(contents);
+    public CallbackHandler(int port) {
         try {
-            stub = (ClientCallback) UnicastRemoteObject.exportObject(callback,0);
-
             callbackManager = (ServerCallbackManager) LocateRegistry.getRegistry(port)
                     .lookup(ServerCallbackManager.OBJECT_NAME);
-
         } catch (RemoteException | NotBoundException e) {
             e.printStackTrace();
             log.severe("problems with rmi callback manager " + e.toString());
@@ -39,7 +33,9 @@ public class CallbackHandler {
     }
 
     public void register(String name, String password, Token token) {
+        callback = new ContentCallback();
         try {
+            ClientCallback stub = (ClientCallback) UnicastRemoteObject.exportObject(callback,0);
             callbackManager.register(stub,name,password,token);
         } catch (RemoteException e) {
             log.severe("problem registering callback " + e.toString());
@@ -62,7 +58,6 @@ public class CallbackHandler {
         try {
             UnicastRemoteObject.unexportObject(callback,true);
         } catch (NoSuchObjectException e) {
-            e.printStackTrace();
             log.severe("problem unsporting callback " + e.toString());
         }
     }

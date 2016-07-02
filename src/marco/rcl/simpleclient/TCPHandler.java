@@ -21,7 +21,7 @@ public class TCPHandler {
     private Socket socket = null;
     private ServerSocket server = null;
     private static final Logger log = Client.getLog();
-    private ExecutorService ex;
+    private ExecutorService ex = Client.getExecutorService();
     private boolean receiving = false;
     private ObjectOutputStream out = null;
     private ObjectInputStream in = null;
@@ -29,9 +29,8 @@ public class TCPHandler {
     private String address;
 
 
-    public TCPHandler(Configs config, Vector<String> friendsRequests, ExecutorService ex) {
+    public TCPHandler(Configs config, Vector<String> friendsRequests) {
         this.friendsRequests = friendsRequests;
-        this.ex = ex;
         this.port = (int) config.ServerPort;
         this.address = config.ServerAddress;
         try {
@@ -65,6 +64,7 @@ public class TCPHandler {
      * close everything and exits
      */
     public void close(){
+        stopReceiving();
         if (socket!=null) try {socket.close();} catch (IOException ignored) {}
         if (server!=null) try {server.close();} catch (IOException ignored) {}
         if (in!=null) try {in.close();} catch (IOException ignored) {}
@@ -86,13 +86,13 @@ public class TCPHandler {
                ) {
                    String tmp = reader.readLine();
                    if (tmp != null) friendsRequests.add(tmp);
-               } catch (SocketException e){
-                   log.info("connection closed");
                }catch (IOException e) {
-                   log.severe("something went wrong in receiving server connections");
-                   e.printStackTrace();
-                   this.close();
-                   throw new RuntimeException(e);
+                   if (receiving) {
+                       log.severe("something went wrong in receiving server connections");
+                       e.printStackTrace();
+                       this.close();
+                       throw new RuntimeException(e);
+                   } else log.info("connection closed");
                }
            }
         });

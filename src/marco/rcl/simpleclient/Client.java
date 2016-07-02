@@ -8,10 +8,10 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Scanner;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 import static marco.rcl.shared.Commands.*;
@@ -23,11 +23,8 @@ public class Client {
     private static Configs configs = null;
     private static final String directory = "./ClientData";
     private static Vector<String> friendsRequests = new Vector<>();
-    private static ExecutorService ex = Executors.newCachedThreadPool();
-    private static Vector<String> contents = new Vector<>();
+    private static ExecutorService executorService = Executors.newCachedThreadPool();
 
-
-    private static Scanner scanner = new Scanner(System.in);
     private static String name, password;
     private static TCPHandler tcp = null;
     private static KeepAliveResponder responder = null;
@@ -39,14 +36,10 @@ public class Client {
     private static String content = null;
 
     public static ExecutorService getExecutorService() {
-        return ex;
+        return executorService;
     }
     public static Logger getLog() {
         return log;
-    }
-
-    public static void submit(Runnable r){
-        ex.submit(r);
     }
 
     private static void getConfigs(){
@@ -72,10 +65,15 @@ public class Client {
         log.info("directory correctly created");
     }
 
-    private static void close(){
-        if (tcp != null) {
-            tcp.stopReceiving();
-            tcp.close();
+    public static void close(){
+        if (tcp != null) tcp.close();
+        if (handler!=null) handler.close();
+        if (responder!=null) responder.close();
+        executorService.shutdown();
+        try {
+            executorService.awaitTermination(5, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            executorService.shutdownNow();
         }
         System.exit(0);
     }
@@ -93,9 +91,10 @@ public class Client {
         Client.name = null;
         Client.password = null;
         Client.token = null;
+        Client.user = null;
+        Client.content = null;
         responder.stopResponding();
         handler.close();
-        handler = null;
     }
 
     public static Errors login(String name, String password){
@@ -105,7 +104,6 @@ public class Client {
         log.info("login command sent");
         token = response.getToken();
         if (response.getError()==noErrors){
-            handler = new CallbackHandler(contents, (int) configs.CallbackPort);
             handler.register(name,password,token);
             responder.startResponding(name,password);
         }
@@ -122,6 +120,7 @@ public class Client {
             handler.register(name,password,token);
             responder.startResponding(name,password);
         }
+        Client.login(name,password);
         return response.getError();
     }
 
@@ -158,7 +157,7 @@ public class Client {
         return sendCommand(PendingRequests);
     }
 
-    public static void confimRequest(String user){
+    public static void confirmRequest(String user){
         Client.user = user;
         sendCommand(FriendConfirm);
         Client.user = null;
@@ -177,11 +176,12 @@ public class Client {
         }
         setUp();
         getConfigs();
-        int code = -1;
-        tcp = new TCPHandler(configs, friendsRequests,ex);
+        tcp = new TCPHandler(configs, friendsRequests);
         address = tcp.getAddress();
         port = tcp.getPort();
+        handler = new CallbackHandler((int) configs.CallbackPort);
         responder = new KeepAliveResponder(configs);
+        configs=null;
         tcp.startReceiving();
         log.info("client started");
         SimpleGUI.startView();

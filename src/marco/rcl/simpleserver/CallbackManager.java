@@ -28,20 +28,19 @@ public class CallbackManager extends RemoteObject implements ServerCallbackManag
     private String pendingContentsFile;
     private long backupInterval;
     private boolean backing = false;
-    private ExecutorService ex = null;
+    private ExecutorService ex = Server.getExecutorService();
 
     /**
      * @param friendManager friend manager of the server
      * @param userManager user manager of the server
      * @param config config parameters
      */
-    public CallbackManager(FriendManager friendManager, UserManager userManager, Configs config, ExecutorService ex) {
+    public CallbackManager(FriendManager friendManager, UserManager userManager, Configs config) {
         this.friendManager = friendManager;
         this.userManager = userManager;
         this.pendingContentsFile = config.PendingContents;
         this.followersFile = config.FollowersFileName;
         this.backupInterval = config.BackupInterval;
-        this.ex = ex;
         this.followers = DiskManager.RestoreFriendList(config.FollowersFileName);
         // if something goes wrong there nothing there's no recovery, aborting
         if (followers == null){
@@ -82,25 +81,26 @@ public class CallbackManager extends RemoteObject implements ServerCallbackManag
         // if the user has followers
         // for every follower
         for (String follower : userFollowers) {
-            // try to get his callback
+            boolean backup = false;
             ClientCallback c = userManager.getCallback(follower);
-            // if the callback is present
-            if (c != null) {
-                // try to send him the content
+            if (!userManager.getUsers().get(follower).isOnline() || c==null) backup=true;
+            else{
                 try {
+                    // try to send him the content
                     c.content(user + ": " + content);
                     log.info("content correctly sent to " + user);
                     // if ok go to the next follower
-                    continue;
                 } catch (RemoteException e) {
+                    backup=true;
                     e.printStackTrace();
                     log.info("failed sending content to the user " + follower);
                 }
             }
             // if the follower is offline or the send fails save the pending content
-            if (pendingContents.containsKey(follower))
-                pendingContents.get(follower).add(user + ": " + content);
-            else pendingContents.put(follower, createAndAdd(user + ": " + content));
+            if (backup) {
+                if (pendingContents.containsKey(follower)) pendingContents.get(follower).add(user + ": " + content);
+                else  pendingContents.put(follower, createAndAdd(user + ": " + content));
+            }
         }
     }
 
@@ -108,11 +108,12 @@ public class CallbackManager extends RemoteObject implements ServerCallbackManag
     public Errors register(ClientCallback c, String name, String password, Token token) throws RemoteException {
         // check if the user is valid and set his callback
         Errors check = userManager.setCallback(c, name, password, token);
-        boolean flag = true;
         // if there are no errors and the user has pending content, try send him
         if (check == noErrors){
             if (pendingContents.containsKey(name)){
+                boolean flag = true;
                 Vector<String> contents = new Vector<>(pendingContents.get(name));
+                System.out.println(contents);
                 try {
                     for (String content : contents) {
                         c.content(content);
@@ -121,7 +122,7 @@ public class CallbackManager extends RemoteObject implements ServerCallbackManag
                     log.severe("problem in sending contents" + e.toString());
                     flag=false;
                 }
-               if (flag) pendingContents.remove(name);
+                if (flag) pendingContents.remove(name);
             }
         }
         log.info("user correctly " + name + " registered");
@@ -137,8 +138,10 @@ public class CallbackManager extends RemoteObject implements ServerCallbackManag
         // a user can follow only one of his friends
         if (friendManager.getFriendList(name)==null)return UserNotValid;
         if (Arrays.asList(friendManager.getFriendList(name)).contains(friendName)){
-            if (followers.containsKey(friendName)) followers.get(friendName).add(name);
-            else followers.put(friendName,createAndAdd(name));
+            if (followers.containsKey(friendName)) {
+                if (followers.get(friendName).contains(name)) return UserNotValid;
+                followers.get(friendName).add(name);
+            }else followers.put(friendName,createAndAdd(name));
             return noErrors;
         }
         return UserNotValid;
@@ -146,7 +149,6 @@ public class CallbackManager extends RemoteObject implements ServerCallbackManag
 
     /**
      * this function saves the current state of followers and contents on the disk
-     * @throws InterruptedException
      */
     public void startBackup() {
         // if already started do noting
@@ -166,18 +168,16 @@ public class CallbackManager extends RemoteObject implements ServerCallbackManag
                     }
                     log.info("backup complete");
                     // because disk is slow do this only after an interval
-                        Thread.sleep(backupInterval);
+                    Thread.sleep(backupInterval);
                 }
             } catch (InterruptedException e) {
-                this.stopBackup();
-                log.severe("problems in saving friendships");
-                e.printStackTrace();
-                throw new RuntimeException(e);
+                log.severe("CallbackManager interrupted");
             }
         });
     }
 
     public void stopBackup(){
         backing = false;
+        Thread.currentThread().interrupt();
     }
 }

@@ -6,6 +6,8 @@ import marco.rcl.shared.Response;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,6 +38,7 @@ public class SimpleGUI {
 
     private static buttonNames btn = new buttonNames();
 
+
     static class buttonNames{
         static final String Logout = "Logout";
         static final String SearchUser = "Search User";
@@ -56,6 +59,17 @@ public class SimpleGUI {
             }
             return fields.toArray(new String[fields.size()]);
         }
+    }
+
+    static {
+        window.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+        window.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                Client.close();
+                super.windowClosing(e);
+            }
+        });
     }
 
     public static void addMessage(String text){
@@ -184,8 +198,8 @@ public class SimpleGUI {
             switch (name) {
                 case Logout:
                     button.addActionListener( e -> {
-                        Client.logout();
                         messageLabel.setText("");
+                        Client.logout();
                         JOptionPane.showMessageDialog(chatView,"Good bye!!");
                         showInitialView();
                     });
@@ -248,7 +262,7 @@ public class SimpleGUI {
                                 int option = JOptionPane.showConfirmDialog(chatView,request + " wants to be your friend",
                                         "Friend request",JOptionPane.YES_NO_OPTION);
                                 if (option==JOptionPane.OK_OPTION){
-                                    Client.confimRequest(request);
+                                    Client.confirmRequest(request);
                                 } else Client.ignoreRequest(request);
                             }
                         }
@@ -272,7 +286,6 @@ public class SimpleGUI {
     public static void startView(){
         if (isStarted)return;
         isStarted=true;
-        window.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setLayout();
         setViews();
         setInitialView();

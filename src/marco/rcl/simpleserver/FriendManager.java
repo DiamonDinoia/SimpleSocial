@@ -3,6 +3,7 @@ package marco.rcl.simpleserver;
 
 import marco.rcl.shared.Configs;
 import marco.rcl.shared.Errors;
+import marco.rcl.simpleclient.TCPHandler;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,12 +28,12 @@ public class FriendManager {
     private ConcurrentHashMap<String,HashMap<String,Long>> pendingRequests;
     private ConcurrentHashMap<String,ArrayList<String>> friendships;
     private final static Logger log = Server.getLog();
-    private ExecutorService ex = null;
+    private ExecutorService ex = Server.getExecutorService();
     /**
      * constrictor, initializes data structure and restore the status from the disk
      * @param param structure of configuration parameters
      */
-    public FriendManager(Configs param, ExecutorService ex) {
+    public FriendManager(Configs param) {
         friendships = DiskManager.RestoreFriendList(param.FriendshipFile);
         if (friendships == null){
             log.severe("friendships restore failed");
@@ -42,7 +43,6 @@ public class FriendManager {
         this.requestValidity = param.RequestValidity;
         fileName = param.FriendshipFile;
         backupInterval = param.BackupInterval;
-        this.ex = ex;
         log.info("friend manager correctly started");
     }
 
@@ -177,7 +177,6 @@ public class FriendManager {
 
     /**
      * this functions initiates the friend manager to compact the pending request list
-     * @throws InterruptedException in case of interruption
      */
     public void startRemovingExpiredRequests() {
         if (remove) return;
@@ -191,11 +190,7 @@ public class FriendManager {
                     log.info("expired requests removed");
                 }
             } catch (InterruptedException e) {
-                e.printStackTrace();
-                this.stopRemovingExpiredRequests();
-                this.stopDumpingFriendships();
-                log.severe("error in removing expired requests" + e.toString());
-                throw new RuntimeException(e);
+                log.severe("FriendManager interrupted" + e.toString());
             }
         });
     }
@@ -210,7 +205,6 @@ public class FriendManager {
 
     /**
      * this function tells to the friendManager to start backing-up the friendlist
-     * @throws InterruptedException
      */
     public void startDumpingFriendships() {
         if (dumping) return;
@@ -227,11 +221,7 @@ public class FriendManager {
                     Thread.sleep(backupInterval);
                 }
             } catch (InterruptedException e) {
-                e.printStackTrace();
-                this.stopDumpingFriendships();
-                this.stopRemovingExpiredRequests();
-                log.severe("error in saving friendships exiting");
-                throw new RuntimeException(e);
+                log.severe("FriendManager interrupted");
             }
         });
     }
@@ -240,7 +230,16 @@ public class FriendManager {
      * this function tells to the friendManager to stop backing-up
      */
     public void stopDumpingFriendships(){
-        log.info("stopped backup");
         dumping=false;
+        log.info("stopped backup");
+    }
+
+    /**
+     * this function closes the FriedManager and stops its activities
+     */
+    public void close(){
+        this.stopRemovingExpiredRequests();
+        this.stopDumpingFriendships();
+        Thread.currentThread().interrupt();
     }
 }

@@ -12,11 +12,6 @@ import java.util.Vector;
 public class ContentCallback extends RemoteObject implements ClientCallback {
 
     private final static long serialVersionUID = 1L;
-    private Vector<String> contents = null;
-
-    public ContentCallback(Vector<String> content) {
-        this.contents = content;
-    }
 
     /**
      * this function adds the content to the contents list
@@ -24,7 +19,6 @@ public class ContentCallback extends RemoteObject implements ClientCallback {
      */
     @Override
     public void content(String content) throws RemoteException {
-        contents.add(content);
         SimpleGUI.addMessage(content);
     }
 }

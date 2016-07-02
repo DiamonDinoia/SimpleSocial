@@ -78,9 +78,11 @@ public class KeepAliveResponder {
                }
                // if something goes wrong log and terminate
            } catch (IOException | InterruptedException e) {
-               log.severe("something went wrong during response " + e.toString());
-               e.printStackTrace();
-               throw new RuntimeException(e);
+              if (responding) {
+                  log.severe("something went wrong during response " + e.toString());
+                  e.printStackTrace();
+                  throw new RuntimeException(e);
+              }
            }
         });
     }
@@ -93,7 +95,9 @@ public class KeepAliveResponder {
     }
 
     public void close(){
+        stopResponding();
         multicast.close();
         client.close();
+        Thread.currentThread().interrupt();
     }
 }

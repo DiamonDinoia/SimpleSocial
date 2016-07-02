@@ -3,6 +3,7 @@ package marco.rcl.simpleserver;
 import marco.rcl.shared.Command;
 import marco.rcl.shared.Configs;
 import marco.rcl.shared.Response;
+import sun.awt.windows.ThemeReader;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -20,25 +21,23 @@ import java.util.logging.Logger;
 public class ConnectionManager {
     private ServerSocket serverSocket;
     private Logger log = Server.getLog();
-    private ExecutorService executorService;
+    private ExecutorService executorService = Server.getExecutorService();
     private boolean manage = false;
     private UserManager userManager = null;
 
     /**
      * Constructor, initializes the socket
      */
-    public ConnectionManager(Configs configs, ExecutorService ex , UserManager userManager) {
+    public ConnectionManager(Configs configs, UserManager userManager) {
         try {
             InetAddress address = InetAddress.getByName(configs.ServerAddress);
             serverSocket = new ServerSocket((int)configs.ServerPort, (int)configs.Backlog ,address);
             log.info("created serverSocket");
-            executorService = ex;
             this.userManager = userManager;
         } catch (IOException e) {
             // if something went wrong just close if open and abort
             log.severe("Failed creation serverSocket " + e.toString());
             e.printStackTrace();
-            try {serverSocket.close();} catch (Exception ignored) {}
             throw new RuntimeException(e);
         }
         log.info("TCPHandler Manager correctly started");

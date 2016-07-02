@@ -2,6 +2,7 @@ package marco.rcl.simpleserver;
 
 import marco.rcl.shared.Configs;
 import marco.rcl.shared.KeepAlive;
+import marco.rcl.simpleclient.TCPHandler;
 
 import java.io.IOException;
 import java.net.*;
@@ -20,7 +21,7 @@ public class KeepAliveManager {
     private ConcurrentHashMap<String,User> users;
     private MulticastSocket multicast;
     private DatagramPacket keepAlivePacket;
-    private ExecutorService ex;
+    private ExecutorService ex = Server.getExecutorService();
     private final static Logger log = Server.getLog();
     private boolean computing = false;
     private DatagramSocket server;
@@ -31,12 +32,9 @@ public class KeepAliveManager {
     /**
      * @param users Registered user list
      * @param param Configuration parameters
-     * @param ex ExecutorService in order to use only one in the server
      */
-    public KeepAliveManager(ConcurrentHashMap<String, User> users, Configs param, ExecutorService ex) {
+    public KeepAliveManager(ConcurrentHashMap<String, User> users, Configs param) {
         this.users = users;
-        this.ex = ex;
-
         try {
             // create multicast and receiving socket
             InetAddress group = InetAddress.getByName(param.MulticastGroup);
@@ -66,12 +64,15 @@ public class KeepAliveManager {
     public void stopUpdatingStatus(){
         computing = false;
         log.info("keep alive stopped updating status");
+        Thread.currentThread().interrupt();
     }
 
     /**
      * cleanup everything and exit
      */
     public void close(){
+        this.stopUpdatingStatus();
+        Thread.currentThread().interrupt();
         this.server.close();
         this.multicast.close();
         log.info("keep alive closed connections");
@@ -98,11 +99,11 @@ public class KeepAliveManager {
                     }
                 }
             } catch (IOException e) {
-                e.printStackTrace();
-                stopUpdatingStatus();
-                close();
-                log.severe("this should not happen in receiving task " + e.toString());
-                throw new RuntimeException(e);
+                if (computing) {
+                    close();
+                    log.severe("Problems receiving Keep-alive responses " + e.toString());
+                    throw new RuntimeException(e);
+                }
         }
     }
 
@@ -146,12 +147,11 @@ public class KeepAliveManager {
                         else onlineUsers.remove(name);
                     });
                 }
-            } catch (IOException | InterruptedException e) {
+            } catch (IOException e) {
                 log.severe("problems in computing KeepAlive messages " + e.toString());
-                e.printStackTrace();
-                stopUpdatingStatus();
                 close();
-                throw new RuntimeException(e);
+            } catch (InterruptedException e){
+                log.info("keepAliveManager interrupted");
             }
         });
     }

@@ -26,13 +26,13 @@ class UserManager {
     private static final Logger log = Server.getLog();
     private ConcurrentHashMap<String,User> users;
     private final static String userFilename = "./ServerData/Users.ser";
-    private ExecutorService ex;
+    private ExecutorService ex = Server.getExecutorService();
     private FriendManager friendManager;
     private CallbackManager callbackManager;
     private KeepAliveManager keepAliveManager;
 
 
-    public UserManager(ExecutorService ex, FriendManager friendManager) {
+    public UserManager(FriendManager friendManager) {
         // try to restore the previous session
         users = DiskManager.restoreFromDisk(userFilename);
         // fatal error if the restore fails with unknown error then exit
@@ -40,7 +40,6 @@ class UserManager {
             log.severe("problems starting UserManager");
             throw new RuntimeException("problems restoring users");
         }
-        this.ex = ex;
         this.friendManager = friendManager;
         log.info("userManager correctly started");
     }
@@ -183,7 +182,10 @@ class UserManager {
      */
     private Response logout(String name) {
         User u = users.get(name);
-        u.setOffLine();
+        u.setOffLine()
+                .setAddress(null)
+                .setCallback(null)
+                .setPort(-1);
         return new Response();
     }
 
