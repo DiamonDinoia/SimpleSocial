@@ -1,8 +1,7 @@
-package marco.rcl.simpleserver;
+package marco.rcl.simpleServer;
 
 import marco.rcl.shared.Configs;
 import marco.rcl.shared.KeepAlive;
-import marco.rcl.simpleclient.TCPHandler;
 
 import java.io.IOException;
 import java.net.*;
@@ -88,6 +87,7 @@ public class KeepAliveManager {
                 while (computing){
                     server.receive(dp);
                     String[] message = KeepAlive.decodeMessage(dp.getData());
+                    //TODO: check if the user is valid ad use another thread to do it
                     // if the response arrived in time, the user is registered and is online then accept else skip the
                     // response
                     if ((System.currentTimeMillis() - new Long(message[2])) <= TimeUnit.SECONDS.toMillis(10)){
@@ -131,9 +131,7 @@ public class KeepAliveManager {
             try {
                 int cores = Runtime.getRuntime().availableProcessors();
                 log.info("starting " + Integer.toString(cores) + " UDP receivers tasks" );
-                for (int i=0; i < cores; i++){
-                    ex.submit(this::receivingTask);
-                }
+                for (int i=0; i < cores; i++) ex.submit(this::receivingTask);
                 while (computing){
                     Thread.sleep(TimeUnit.SECONDS.toMillis(10));
                     // check if the receiving threads are enough
@@ -144,8 +142,8 @@ public class KeepAliveManager {
                     Thread.sleep(TimeUnit.SECONDS.toMillis(12));
                     users.forEach((name,value) -> {
                         if (!onlineUsers.contains(name)) value.setOffLine();
-                        else onlineUsers.remove(name);
                     });
+                    onlineUsers.clear();
                 }
             } catch (IOException e) {
                 log.severe("problems in computing KeepAlive messages " + e.toString());

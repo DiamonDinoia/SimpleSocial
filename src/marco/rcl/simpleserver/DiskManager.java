@@ -1,4 +1,4 @@
-package marco.rcl.simpleserver;
+package marco.rcl.simpleServer;
 
 import java.io.*;
 import java.nio.file.FileSystems;

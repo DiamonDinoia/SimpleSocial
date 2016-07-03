@@ -1,9 +1,8 @@
-package marco.rcl.simpleserver;
+package marco.rcl.simpleServer;
 
 import marco.rcl.shared.Command;
 import marco.rcl.shared.Configs;
 import marco.rcl.shared.Response;
-import sun.awt.windows.ThemeReader;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -40,7 +39,7 @@ public class ConnectionManager {
             e.printStackTrace();
             throw new RuntimeException(e);
         }
-        log.info("TCPHandler Manager correctly started");
+        log.info("TCPResponder Manager correctly started");
     }
 
     /**

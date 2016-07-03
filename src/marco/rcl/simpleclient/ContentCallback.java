@@ -1,10 +1,9 @@
-package marco.rcl.simpleclient;
+package marco.rcl.simpleClient;
 
 import marco.rcl.shared.ClientCallback;
 
 import java.rmi.RemoteException;
 import java.rmi.server.RemoteObject;
-import java.util.Vector;
 
 /**
  * this class just implement the interface of the Callback

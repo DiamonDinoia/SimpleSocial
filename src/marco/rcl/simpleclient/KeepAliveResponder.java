@@ -1,4 +1,4 @@
-package marco.rcl.simpleclient;
+package marco.rcl.simpleClient;
 
 import marco.rcl.shared.Configs;
 import marco.rcl.shared.KeepAlive;

@@ -1,4 +1,4 @@
-package marco.rcl.simpleclient;
+package marco.rcl.simpleClient;
 
 import marco.rcl.shared.Command;
 import marco.rcl.shared.Configs;
@@ -7,7 +7,6 @@ import marco.rcl.shared.Response;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketException;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.logging.Logger;
@@ -15,7 +14,7 @@ import java.util.logging.Logger;
 /**
  * thia class handles the tcp connections between Server and Client
  */
-public class TCPHandler {
+public class TCPResponder {
 
     private Vector<String> friendsRequests;
     private Socket socket = null;
@@ -29,7 +28,7 @@ public class TCPHandler {
     private String address;
 
 
-    public TCPHandler(Configs config, Vector<String> friendsRequests) {
+    public TCPResponder(Configs config, Vector<String> friendsRequests) {
         this.friendsRequests = friendsRequests;
         this.port = (int) config.ServerPort;
         this.address = config.ServerAddress;

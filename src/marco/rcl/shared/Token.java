@@ -36,7 +36,7 @@ public class Token implements Serializable {
     /**
      * This function is used to check if the token is still valid
      *
-     * @retur true if the token is valid, false otherwise
+     * @return true if the token is valid, false otherwise
      */
     public boolean isValid() {
         return (System.currentTimeMillis() - timestamp) < VALIDITY;

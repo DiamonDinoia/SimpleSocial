@@ -1,4 +1,4 @@
-package marco.rcl.simpleserver;
+package marco.rcl.simpleServer;
 
 import marco.rcl.shared.*;
 
@@ -113,7 +113,6 @@ public class CallbackManager extends RemoteObject implements ServerCallbackManag
             if (pendingContents.containsKey(name)){
                 boolean flag = true;
                 Vector<String> contents = new Vector<>(pendingContents.get(name));
-                System.out.println(contents);
                 try {
                     for (String content : contents) {
                         c.content(content);
