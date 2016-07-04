@@ -16,7 +16,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Logger;
 
 import static marco.rcl.shared.Commands.*;
-import static marco.rcl.shared.Errors.*;
+import static marco.rcl.shared.Errors.noErrors;
 
 public class Client {
 

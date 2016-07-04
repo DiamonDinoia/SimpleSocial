@@ -13,7 +13,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 
-import static marco.rcl.shared.Errors.*;
+import static marco.rcl.shared.Errors.UserNotLogged;
+import static marco.rcl.shared.Errors.noErrors;
 import static marco.rcl.simpleclient.SimpleGUI.buttonNames.*;
 
 /**

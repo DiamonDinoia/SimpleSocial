@@ -11,7 +11,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.logging.Logger;
 
-import static marco.rcl.shared.Errors.*;
+import static marco.rcl.shared.Errors.UserNotValid;
+import static marco.rcl.shared.Errors.noErrors;
 
 /**
  * this class manages callbacks from and to the clients
