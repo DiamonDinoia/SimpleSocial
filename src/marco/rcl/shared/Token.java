@@ -8,7 +8,6 @@ import java.util.concurrent.TimeUnit;
  * This class models the tokens used for authentication between clients/server, it is automatically generated and not
  * editable.
  *
- * @author Marco Barbone
  * @see UUID
  */
 public class Token implements Serializable {

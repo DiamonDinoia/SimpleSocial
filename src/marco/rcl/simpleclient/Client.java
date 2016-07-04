@@ -55,10 +55,8 @@ public class Client {
             configs = new Configs();
         } catch (IOException | ParseException e) {
             e.printStackTrace();
-            log.severe("Failed getting configs parameters from file " + e.toString());
             System.exit(1);
         }
-        log.info("config correctly read");
     }
 
     /**
@@ -70,11 +68,9 @@ public class Client {
             Files.createDirectory(dir);
         } catch (FileAlreadyExistsException ignored) {
         } catch (IOException e) {
-            log.severe("failed creation of the directory " + e.toString());
             e.printStackTrace();
             System.exit(2);
         }
-        log.info("directory correctly created");
     }
 
     /**
@@ -143,10 +139,6 @@ public class Client {
         Response response = sendCommand(Register);
         log.info("register command sent");
         token = response.getToken();
-        if (response.getError() == noErrors) {
-            handler.register(name, password, token);
-            responder.startResponding(name, password);
-        }
         Client.login(name, password);
         lock.unlock();
         return response.getError();
@@ -217,14 +209,14 @@ public class Client {
     }
 
     public static void main(String[] args) {
+        setUp();
+        getConfigs();
         try {
             log = LoggerFactory.getLogger("clientLogger", "client");
         } catch (IOException e) {
             System.err.println("failed creation of logfile");
             System.exit(-1);
         }
-        setUp();
-        getConfigs();
         tcp = new TCPResponder(configs);
         address = tcp.getAddress();
         port = tcp.getPort();

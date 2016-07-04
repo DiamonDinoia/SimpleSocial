@@ -190,16 +190,16 @@ class UserManager {
     private Response logout(String name) {
         User u = users.get(name);
         u.setOffLine()
-                .setAddress(null)
-                .setCallback(null)
-                .setPort(-1);
+            .setAddress(null)
+            .setCallback(null)
+            .setPort(-1);
         return new Response();
     }
 
     /**
      * function used to handle search request from the user
      *
-     * @return server response, contains an array of users if the user is registered and loggedin, or an error message
+     * @return server response, contains an array of users if the user is registered and logged-in, or an error message
      * if something went wrong
      */
     private Response search(String searchUser) {
@@ -282,7 +282,7 @@ class UserManager {
     }
 
     /**
-     * this function send the content to callback manager, this metho can't fail because all the controls are done
+     * this function send the content to callback manager, this method can't fail because all the controls are done
      * before
      *
      * @param name    name of the publisher

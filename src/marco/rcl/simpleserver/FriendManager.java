@@ -125,8 +125,7 @@ public class FriendManager {
     }
 
     /**
-     * if the receiver has received a friendRequest from the sender then remove it otherwise send
-     * an error message
+     * if the receiver has received a friendRequest from the sender then remove it otherwise send an error message
      *
      * @param receiver the receiver of the request
      * @param sender   the sender of the request
@@ -145,7 +144,7 @@ public class FriendManager {
 
     /**
      * this function deletes all the expired requests, it checks all timestamps and if there's someone expired then
-     * deletes
+     * delete
      */
     public void removeExpiredRequests() {
         pendingRequests.values().removeIf(
@@ -194,7 +193,9 @@ public class FriendManager {
             try {
                 while (remove) {
                     removeExpiredRequests();
-                    Thread.sleep(requestValidity / 2);
+                    // is useless continuously check if the requests are expired requests so check when probably
+                    //there are some
+                    Thread.sleep(requestValidity);
                     log.info("expired requests removed");
                 }
             } catch (InterruptedException e) {

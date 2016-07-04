@@ -13,7 +13,7 @@ import java.rmi.server.UnicastRemoteObject;
 import java.util.logging.Logger;
 
 /**
- * This class is used by the client to register the callback to the server and send follow other users
+ * This class is used by the client to register the callback to the server and follow other users
  */
 public class CallbackHandler {
 
@@ -24,7 +24,7 @@ public class CallbackHandler {
     /**
      * the constructor simply get the callbackManager from the server
      *
-     * @param port public port in which is registered the server callback manager
+     * @param port public port in which the server callback manager is registered
      */
     public CallbackHandler(int port) {
         try {
@@ -38,7 +38,7 @@ public class CallbackHandler {
     }
 
     /**
-     * This function send the registration command to the server
+     * This function send the register the callback to the server
      *
      * @param name     user name
      * @param password user password

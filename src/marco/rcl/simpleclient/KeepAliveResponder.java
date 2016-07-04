@@ -29,7 +29,7 @@ public class KeepAliveResponder {
     private final static Logger log = Client.getLog();
 
     /**
-     * constructor tries to set everything up and if something goes wrong exits
+     * constructor tries to set everything up or exits if something goes wrong
      *
      * @param param config param structure
      */

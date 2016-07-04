@@ -145,6 +145,7 @@ public class KeepAliveManager {
         log.info("started updating status");
         ex.submit(() -> {
             try {
+                //creates one thread for each core on the PC
                 int cores = Runtime.getRuntime().availableProcessors();
                 log.info("starting " + Integer.toString(cores) + " UDP receivers tasks");
                 for (int i = 0; i < cores; i++) ex.submit(this::receivingTask);

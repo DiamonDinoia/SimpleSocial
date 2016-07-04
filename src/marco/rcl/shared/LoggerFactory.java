@@ -9,7 +9,7 @@ import java.util.logging.Logger;
  * Class used to get Logger
  */
 public class LoggerFactory {
-    // udeb the factory design pattern here
+    // used the factory design pattern here
     public static Logger getLogger(String name, String fileName) throws IOException {
         Logger log = Logger.getLogger(name);
         log.setUseParentHandlers(false);

@@ -186,8 +186,9 @@ public class DiskManager {
 }
 
 /**
- * when java serialize an object on a file writes an header, that makes impossible append an object at the end of a file
- * overriding the writeStreamHeader and forcing it to do nothing you can append an object to the end of the file
+ * when java serialize an object on a file writes an header, that makes impossible append an object at the end of a
+ * file.
+ * Overriding the writeStreamHeader and forcing it to do nothing is possible to append an object to the end of the file
  */
 class AppendingObjectOutputStream extends ObjectOutputStream {
 

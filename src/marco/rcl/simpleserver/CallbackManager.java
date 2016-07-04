@@ -193,6 +193,9 @@ public class CallbackManager extends RemoteObject implements ServerCallbackManag
         });
     }
 
+    /**
+     * this function stops the backup to the disk and terminates the threads
+     */
     public void stopBackup() {
         backing = false;
         Thread.currentThread().interrupt();

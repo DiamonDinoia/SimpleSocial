@@ -7,7 +7,6 @@ import marco.rcl.shared.Response;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.logging.Logger;
 
@@ -16,7 +15,6 @@ import java.util.logging.Logger;
  */
 public class TCPResponder {
 
-    private Vector<String> friendsRequests;
     private Socket socket = null;
     private ServerSocket server = null;
     private static final Logger log = Client.getLog();
@@ -27,9 +25,12 @@ public class TCPResponder {
     private int port;
     private String address;
 
-
-    public TCPResponder(Configs config, Vector<String> friendsRequests) {
-        this.friendsRequests = friendsRequests;
+    /**
+     * this function tries to set up the tcp connection with the server, crashes if it fail
+     *
+     * @param config config parameters
+     */
+    public TCPResponder(Configs config) {
         this.port = (int) config.ServerPort;
         this.address = config.ServerAddress;
         try {
@@ -45,76 +46,91 @@ public class TCPResponder {
 
     /**
      * this function return the address of the client
+     *
      * @return the address fo the client
      */
-    public String getAddress(){
+    public String getAddress() {
         return server.getInetAddress().getHostAddress();
     }
 
     /**
      * this function return the port of the client
+     *
      * @return client port
      */
-    public int getPort(){
+    public int getPort() {
         return server.getLocalPort();
     }
 
     /**
      * close everything and exits
      */
-    public void close(){
+    public void close() {
         stopReceiving();
-        if (socket!=null) try {socket.close();} catch (IOException ignored) {}
-        if (server!=null) try {server.close();} catch (IOException ignored) {}
-        if (in!=null) try {in.close();} catch (IOException ignored) {}
-        if (out!=null) try {out.close();} catch (IOException ignored) {}
+        if (socket != null) try {
+            socket.close();
+        } catch (IOException ignored) {
+        }
+        if (server != null) try {
+            server.close();
+        } catch (IOException ignored) {
+        }
+        if (in != null) try {
+            in.close();
+        } catch (IOException ignored) {
+        }
+        if (out != null) try {
+            out.close();
+        } catch (IOException ignored) {
+        }
     }
 
     /**
      * start receiving connection from the server
      */
-    public void startReceiving(){
+    public void startReceiving() {
         if (receiving) return;
         receiving = true;
         log.info("TCP manager started receiving");
         ex.submit(() -> {
-           while (receiving) {
-               try (
-                       Socket connection = server.accept();
-                       BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))
-               ) {
-                   String tmp = reader.readLine();
-                   if (tmp != null) friendsRequests.add(tmp);
-               }catch (IOException e) {
-                   if (receiving) {
-                       log.severe("something went wrong in receiving server connections");
-                       e.printStackTrace();
-                       this.close();
-                       throw new RuntimeException(e);
-                   } else log.info("connection closed");
-               }
-           }
+            while (receiving) {
+                try (
+                        Socket connection = server.accept();
+                        BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))
+                ) {
+                    String tmp = reader.readLine();
+                    log.info("received request from " + tmp);
+                } catch (IOException e) {
+                    if (receiving) {
+                        log.severe("something went wrong in receiving server connections");
+                        e.printStackTrace();
+                        this.close();
+                        throw new RuntimeException(e);
+                    } else log.info("connection closed");
+                }
+            }
         });
     }
 
     /**
      * stop receiving connections from the server
      */
-    public void stopReceiving(){
+    public void stopReceiving() {
         receiving = false;
         log.info("TCP manager stopped receiving");
     }
 
     /**
      * this function sends a command to the server
+     *
      * @param command command to send
      * @return returns true if something went wrong or false otherwise
      */
-    public Response sendCommandAndGetResponse(Command command){
-        try (Socket socket = new Socket(address,port);
+    public Response sendCommandAndGetResponse(Command command) {
+        try (Socket socket = new Socket(address, port);
              ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
              ObjectInputStream in = new ObjectInputStream(socket.getInputStream())
-            ){
+        ) {
             out.writeObject(command);
             out.flush();
             log.info("command sent");
@@ -122,7 +138,7 @@ public class TCPResponder {
             in.close();
             out.close();
             return r;
-        } catch (EOFException ignored){
+        } catch (EOFException ignored) {
         } catch (IOException e) {
             log.severe("problem sending command " + e.toString());
             e.printStackTrace();
