@@ -1,4 +1,4 @@
-package marco.rcl.simpleclient;
+package marco.rcl.simpleClient;
 
 import marco.rcl.shared.*;
 import org.json.simple.parser.ParseException;
@@ -12,6 +12,7 @@ import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Logger;
 
 import static marco.rcl.shared.Commands.*;
@@ -24,9 +25,10 @@ public class Client {
     private static final String directory = "./ClientData";
     private static Vector<String> friendsRequests = new Vector<>();
     private static ExecutorService executorService = Executors.newCachedThreadPool();
+    private static final ReentrantLock lock = new ReentrantLock();
 
     private static String name, password;
-    private static TCPHandler tcp = null;
+    private static TCPResponder tcp = null;
     private static KeepAliveResponder responder = null;
     private static CallbackHandler handler;
     private static Token token = null;
@@ -34,6 +36,7 @@ public class Client {
     private static int port = -1;
     private static String user = null;
     private static String content = null;
+
 
     public static ExecutorService getExecutorService() {
         return executorService;
@@ -87,6 +90,7 @@ public class Client {
                 .setPort(port));
     }
     public static void logout(){
+        lock.lock();
         sendCommand(Logout);
         Client.name = null;
         Client.password = null;
@@ -95,9 +99,11 @@ public class Client {
         Client.content = null;
         responder.stopResponding();
         handler.close();
+        lock.unlock();
     }
 
     public static Errors login(String name, String password){
+        lock.lock();
         Client.name = name;
         Client.password = password;
         Response response = sendCommand(Login);
@@ -107,10 +113,12 @@ public class Client {
             handler.register(name,password,token);
             responder.startResponding(name,password);
         }
+        lock.unlock();
         return response.getError();
     }
 
     public static Errors register(String name, String password){
+        lock.lock();
         Client.name = name;
         Client.password = password;
         Response response = sendCommand(Register);
@@ -121,51 +129,71 @@ public class Client {
             responder.startResponding(name,password);
         }
         Client.login(name,password);
+        lock.unlock();
         return response.getError();
     }
 
     public static Response searchUser(String user){
+        lock.lock();
         Client.user = user;
         Response response = sendCommand(SearchUser);
         Client.user=null;
+        lock.unlock();
         return response;
     }
 
     public static Errors addFriend(String user){
+        lock.lock();
         Client.user = user;
         Response response = sendCommand(FriendRequest);
         Client.user= null;
+        lock.unlock();
         return response.getError();
     }
 
     public static Response friendList(){
-        return sendCommand(FriendList);
+        lock.lock();
+        Response response = sendCommand(FriendList);
+        lock.unlock();
+        return response;
     }
 
     public static Errors followFriend(String user){
-        return handler.follow(user,name,password,token);
+        lock.lock();
+        Errors error =  handler.follow(user,name,password,token);
+        lock.unlock();
+        return error;
     }
 
     public static Errors publish(String content){
+        lock.lock();
         Client.content = content;
         Response response = sendCommand(Publish);
         Client.content = null;
+        lock.unlock();
         return response.getError();
     }
 
     public static Response friendRequests() {
-        return sendCommand(PendingRequests);
+        lock.lock();
+        Response response = sendCommand(PendingRequests);
+        lock.unlock();
+        return response;
     }
 
     public static void confirmRequest(String user){
+        lock.lock();
         Client.user = user;
         sendCommand(FriendConfirm);
         Client.user = null;
+        lock.unlock();
     }
     public static void ignoreRequest(String user){
+        lock.lock();
         Client.user = user;
         sendCommand(FriendIgnore);
         Client.user = null;
+        lock.unlock();
     }
 
     public static void main(String[] args) {
@@ -176,7 +204,7 @@ public class Client {
         }
         setUp();
         getConfigs();
-        tcp = new TCPHandler(configs, friendsRequests);
+        tcp = new TCPResponder(configs, friendsRequests);
         address = tcp.getAddress();
         port = tcp.getPort();
         handler = new CallbackHandler((int) configs.CallbackPort);

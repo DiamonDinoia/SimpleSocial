@@ -1,4 +1,4 @@
-package marco.rcl.simpleclient;
+package marco.rcl.simpleClient;
 
 
 import marco.rcl.shared.Errors;
@@ -11,9 +11,10 @@ import java.awt.event.WindowEvent;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.concurrent.ExecutorService;
 
 import static marco.rcl.shared.Errors.*;
-import static marco.rcl.simpleclient.SimpleGUI.buttonNames.*;
+import static marco.rcl.simpleClient.SimpleGUI.buttonNames.*;
 
 /**
  * Created by marko on 21/06/2016.
@@ -21,7 +22,6 @@ import static marco.rcl.simpleclient.SimpleGUI.buttonNames.*;
 public class SimpleGUI {
 
     private static boolean isStarted = false;
-//    private static Dimension buttonDimensions = new Dimension(400,20);
     private static Dimension viewDimension = new Dimension(620,500);
     private static JFrame window = new JFrame("Simple-Chat");
     private static JTextArea messageLabel = new JTextArea(1,1);
@@ -35,7 +35,7 @@ public class SimpleGUI {
     private static CardLayout cardLayout = new CardLayout();
     private static HashMap<String,JButton> topButtons = new HashMap<>(6);
     private static String[] viewNames = {"initialView","chatView"};
-
+    private static ExecutorService ex = Client.getExecutorService();
     private static buttonNames btn = new buttonNames();
 
 
@@ -152,7 +152,7 @@ public class SimpleGUI {
         chatView.add(sendButton,constraints);
     }
 
-    private static void setSendListener(){
+    private static void sendListener(){
         String content = sendMessage.getText();
         if (content==null || content.equals(""))return;
         content += '\n';
@@ -167,28 +167,29 @@ public class SimpleGUI {
         loginButton.setBackground(Color.WHITE);
         registerButton.setBackground(Color.white);
         loginButton.addActionListener( e -> {
-            JTextField username = new JTextField();
-            JTextField password = new JTextField();
-            Object[] message = {"Username:", username, "Password", password};
-            int option =  JOptionPane.showConfirmDialog(initialView,message,"Login",JOptionPane.DEFAULT_OPTION);
-            if (option!=JOptionPane.OK_OPTION) return;
-            Errors error = Client.login(username.getText(),password.getText());
-            if (error == Errors.noErrors)showChatView();
-            else JOptionPane.showMessageDialog(initialView, Errors.getError(error),
-                    "Login Error",JOptionPane.ERROR_MESSAGE);
+                JTextField username = new JTextField();
+                JTextField password = new JTextField();
+                Object[] message = {"Username:", username, "Password", password};
+                int option = JOptionPane.showConfirmDialog(initialView, message, "Login", JOptionPane.DEFAULT_OPTION);
+                if (option != JOptionPane.OK_OPTION) return;
+                Errors error = Client.login(username.getText(), password.getText());
+                if (error == Errors.noErrors) showChatView();
+                else JOptionPane.showMessageDialog(initialView, Errors.getError(error),
+                        "Login Error", JOptionPane.ERROR_MESSAGE);
         });
         registerButton.addActionListener( e -> {
-            JTextField username = new JTextField();
-            JTextField password = new JTextField();
-            Object[] message = {"Username:", username, "Password", password};
-            int option = JOptionPane.showConfirmDialog(initialView,message,
-                    "Register",JOptionPane.DEFAULT_OPTION);
-            if (option!=JOptionPane.OK_OPTION) return;
-            Errors error = Client.register(username.getText(),password.getText());
-            if (error == Errors.noErrors)showChatView();
-            else JOptionPane.showMessageDialog(initialView, Errors.getError(error),
-                    "Registration Error",JOptionPane.ERROR_MESSAGE);
+                JTextField username = new JTextField();
+                JTextField password = new JTextField();
+                Object[] message = {"Username:", username, "Password", password};
+                int option = JOptionPane.showConfirmDialog(initialView, message,
+                        "Register", JOptionPane.DEFAULT_OPTION);
+                if (option != JOptionPane.OK_OPTION) return;
+                Errors error = Client.register(username.getText(), password.getText());
+                if (error == Errors.noErrors) showChatView();
+                else JOptionPane.showMessageDialog(initialView, Errors.getError(error),
+                        "Registration Error", JOptionPane.ERROR_MESSAGE);
         });
+
         initialView.add(loginButton);
         initialView.add(registerButton);
     }
@@ -198,99 +199,100 @@ public class SimpleGUI {
             switch (name) {
                 case Logout:
                     button.addActionListener( e -> {
-                        messageLabel.setText("");
-                        Client.logout();
-                        JOptionPane.showMessageDialog(chatView,"Good bye!!");
-                        showInitialView();
+                            messageLabel.setText("");
+                            Client.logout();
+                            JOptionPane.showMessageDialog(chatView, "Good bye!!");
+                            showInitialView();
                     });
                     break;
                 case SearchUser:
                     button.addActionListener( e -> {
-                        String user = JOptionPane.showInputDialog("Please insert the username");
-                        if (user==null || user.equals("") ) return;
-                        Response response = Client.searchUser(user);
-                        if (response.getError()==UserNotLogged){
-                            showInitialView();
-                            return;
-                        }
-                        if (response.getError()==noErrors){
-                            if (response.getUserList() == null){
-                                JOptionPane.showMessageDialog(chatView,"User not found");
-                            } else JOptionPane.showMessageDialog(chatView,response.getUserList());
-                        }
-                        else JOptionPane.showMessageDialog(chatView,Errors.getError(response.getError()),
-                                "Search Error",JOptionPane.ERROR_MESSAGE);
+                            String user = JOptionPane.showInputDialog("Please insert the username");
+                            if (user == null || user.equals("")) return;
+                            Response response = Client.searchUser(user);
+                            if (response.getError() == UserNotLogged) {
+                                showInitialView();
+                                return;
+                            }
+                            if (response.getError() == noErrors) {
+                                if (response.getUserList() == null) {
+                                    JOptionPane.showMessageDialog(chatView, "User not found");
+                                } else JOptionPane.showMessageDialog(chatView, response.getUserList());
+                            } else JOptionPane.showMessageDialog(chatView, Errors.getError(response.getError()),
+                                    "Search Error", JOptionPane.ERROR_MESSAGE);
                     });
                     break;
                 case AddFriend:
                     button.addActionListener( e -> {
-                        String user = JOptionPane.showInputDialog("Please insert the username");
-                        if (user==null || user.equals("") ) return;
-                        Errors error = Client.addFriend(user);
-                        if (error==UserNotLogged){
-                            showInitialView();
-                            return;
-                        }
-                        if (error==noErrors) JOptionPane.showMessageDialog(chatView,"Request sent");
-                        else JOptionPane.showMessageDialog(chatView,Errors.getError(error),
-                                "Add Friend",JOptionPane.ERROR_MESSAGE);
+                            String user = JOptionPane.showInputDialog("Please insert the username");
+                            if (user == null || user.equals("")) return;
+                            Errors error = Client.addFriend(user);
+                            if (error == UserNotLogged) {
+                                showInitialView();
+                                return;
+                            }
+                            if (error == noErrors) JOptionPane.showMessageDialog(chatView, "Request sent");
+                            else JOptionPane.showMessageDialog(chatView, Errors.getError(error),
+                                    "Add Friend", JOptionPane.ERROR_MESSAGE);
                     });
                     break;
                 case FriendList:
                     button.addActionListener( e -> {
-                        Response response = Client.friendList();
-                        if (response.getError()==UserNotLogged){
-                            showInitialView();
-                            return;
-                        }
-                        if (response.getError()!= noErrors){
-                            JOptionPane.showMessageDialog(chatView,Errors.getError(response.getError()),
-                                    "Friend List",JOptionPane.ERROR_MESSAGE);
-                        } else {
-                            if (response.getFriendList()!=null)
-                                JOptionPane.showMessageDialog(chatView,response.getFriendList());
-                            else
-                                JOptionPane.showMessageDialog(chatView,"Empty friend list");
-                        }
-                    });
+                            Response response = Client.friendList();
+                            if (response.getError() == UserNotLogged) {
+                                showInitialView();
+                                return;
+                            }
+                            if (response.getError() != noErrors) {
+                                JOptionPane.showMessageDialog(chatView, Errors.getError(response.getError()),
+                                        "Friend List", JOptionPane.ERROR_MESSAGE);
+                            } else {
+                                if (response.getFriendList() != null)
+                                    JOptionPane.showMessageDialog(chatView, response.getFriendList());
+                                else
+                                    JOptionPane.showMessageDialog(chatView, "Empty friend list");
+                            }
+                        });
                     break;
                 case FollowFriend:
                     button.addActionListener( e -> {
-                        String user = JOptionPane.showInputDialog("Please insert the username");
-                        Errors error = Client.followFriend(user);
-                        if (error==UserNotLogged){
-                            showInitialView();
-                            return;
-                        }
-                        if (error == noErrors) JOptionPane.showMessageDialog(chatView, "User followed");
-                        else JOptionPane.showMessageDialog(chatView, Errors.getError(error),
-                                "Follow Friend", JOptionPane.ERROR_MESSAGE);
-                    });
+                            String user = JOptionPane.showInputDialog("Please insert the username");
+                            if (user == null || user.equals("")) return;
+                            Errors error = Client.followFriend(user);
+                            if (error == UserNotLogged) {
+                                showInitialView();
+                                return;
+                            }
+                            if (error == noErrors) JOptionPane.showMessageDialog(chatView, "User followed");
+                            else JOptionPane.showMessageDialog(chatView, Errors.getError(error),
+                                    "Follow Friend", JOptionPane.ERROR_MESSAGE);
+                        });
                     break;
                 case FriendRequests:
                     button.addActionListener(e -> {
-                        Response response =  Client.friendRequests();
-                        if (response.getError()==UserNotLogged){
-                            showInitialView();
-                            return;
-                        }
-                        if (response.getUserList()==null){
-                            JOptionPane.showMessageDialog(chatView, "You have no requests!",
-                                    "Follow Friend", JOptionPane.INFORMATION_MESSAGE);
-                        } else {
-                            for (String request : response.getUserList()) {
-                                int option = JOptionPane.showConfirmDialog(chatView,request + " wants to be your friend",
-                                        "Friend request",JOptionPane.YES_NO_OPTION);
-                                if (option==JOptionPane.OK_OPTION){
-                                    Client.confirmRequest(request);
-                                } else Client.ignoreRequest(request);
+                            Response response = Client.friendRequests();
+                            if (response.getError() == UserNotLogged) {
+                                showInitialView();
+                                return;
                             }
-                        }
-                    });
+                            if (response.getUserList() == null) {
+                                JOptionPane.showMessageDialog(chatView, "You have no requests!",
+                                        "Follow Friend", JOptionPane.INFORMATION_MESSAGE);
+                            } else {
+                                for (String request : response.getUserList()) {
+                                    int option = JOptionPane.showConfirmDialog(chatView, request + " wants to be your friend",
+                                            "Friend request", JOptionPane.YES_NO_OPTION);
+                                    if (option == JOptionPane.OK_OPTION) {
+                                        Client.confirmRequest(request);
+                                    } else Client.ignoreRequest(request);
+                                }
+                            }
+                        });
+                    break;
             }
         });
-        sendButton.addActionListener(e -> setSendListener());
-        sendMessage.addActionListener(e -> setSendListener());
+        sendButton.addActionListener(e -> SimpleGUI.sendListener());
+        sendMessage.addActionListener(e -> SimpleGUI.sendListener());
 
     }
 
