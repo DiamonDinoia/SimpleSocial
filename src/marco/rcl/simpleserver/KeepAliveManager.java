@@ -23,7 +23,6 @@ public class KeepAliveManager {
     private DatagramSocket server;
     private ConcurrentSkipListSet<String> onlineUsers;
     private LinkedBlockingQueue<byte[]> queue;
-    private boolean[] flags = new boolean[512];
 
     /**
      * @param users Registered user list
