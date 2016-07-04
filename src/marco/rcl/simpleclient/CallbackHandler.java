@@ -13,7 +13,7 @@ import java.rmi.server.UnicastRemoteObject;
 import java.util.logging.Logger;
 
 /**
- * Created by marko on 06/06/2016.
+ * This class is used by the client to register the callback to the server and send follow other users
  */
 public class CallbackHandler {
 
@@ -21,6 +21,10 @@ public class CallbackHandler {
     private ClientCallback callback;
     private static final Logger log = Client.getLog();
 
+    /**
+     * the constructor simply get the callbackManager from the server
+     * @param port public port in which is registered the server callback manager
+     */
     public CallbackHandler(int port) {
         try {
             callbackManager = (ServerCallbackManager) LocateRegistry.getRegistry(port)
@@ -32,11 +36,21 @@ public class CallbackHandler {
         }
     }
 
+    /**
+     * This function send the registration command to the server
+     * @param name user name
+     * @param password user password
+     * @param token user token
+     */
     public void register(String name, String password, Token token) {
         callback = new ContentCallback();
         try {
             ClientCallback stub = (ClientCallback) UnicastRemoteObject.exportObject(callback,0);
-            callbackManager.register(stub,name,password,token);
+            Errors error = callbackManager.register(stub,name,password,token);
+            if (error!=Errors.noErrors){
+                log.severe("problem registering callback");
+                throw new RuntimeException("problem registering callback");
+            }
         } catch (RemoteException e) {
             log.severe("problem registering callback " + e.toString());
             e.printStackTrace();
@@ -44,6 +58,14 @@ public class CallbackHandler {
         }
     }
 
+    /**
+     * function used by the client to request to follow another user
+     * @param user user to follow
+     * @param name user name
+     * @param password user password
+     * @param token user token
+     * @return error or confirm code
+     */
     public Errors follow(String user, String name, String password, Token token){
         try {
             return callbackManager.follow(user, name, password, token);
@@ -54,6 +76,9 @@ public class CallbackHandler {
         }
     }
 
+    /**
+     * function used to remove the callback
+     */
     public void close(){
         try {
             UnicastRemoteObject.unexportObject(callback,true);

@@ -18,7 +18,7 @@ import static marco.rcl.shared.Errors.noErrors;
 import static marco.rcl.simpleclient.SimpleGUI.buttonNames.*;
 
 /**
- * Created by marko on 21/06/2016.
+ * This class implements the GUI showed to the users
  */
 public class SimpleGUI {
 

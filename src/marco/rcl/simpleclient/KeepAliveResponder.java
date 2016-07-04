@@ -13,7 +13,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.logging.Logger;
 
 /**
- * Created by marko on 06/06/2016.
+ * This class responds to the keep-alive request from the server
  */
 public class KeepAliveResponder {
 
@@ -27,6 +27,7 @@ public class KeepAliveResponder {
     private InetAddress address;
     private int port;
     private final static Logger log = Client.getLog();
+
     /**
      * constructor tries to set everything up and if something goes wrong exits
      * @param param config param structure
@@ -54,7 +55,7 @@ public class KeepAliveResponder {
     }
 
     /**
-     * this function initiates the keepaliveresponder to send keepalive responses
+     * this function initiates the keepAliveResponder to send keepAlive responses
      */
     public void startResponding(String name, String password){
         if (responding) return;
@@ -94,6 +95,9 @@ public class KeepAliveResponder {
         responding = false;
     }
 
+    /**
+     * this function closes the data structure and terminates the threads
+     */
     public void close(){
         stopResponding();
         multicast.close();

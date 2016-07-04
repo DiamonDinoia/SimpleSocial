@@ -3,7 +3,7 @@ package marco.rcl.shared;
 import java.io.Serializable;
 
 /**
- * Created by marko on 03/06/2016.
+ * This class il used by the server to send to che clients information about their friends
  */
 public class UserShared  implements Serializable{
 

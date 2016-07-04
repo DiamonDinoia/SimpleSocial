@@ -18,12 +18,14 @@ import java.util.logging.Logger;
 import static marco.rcl.shared.Commands.*;
 import static marco.rcl.shared.Errors.noErrors;
 
+/**
+ * This is the Main class of the client.
+ */
 public class Client {
 
     private static Logger log = null;
     private static Configs configs = null;
     private static final String directory = "./ClientData";
-    private static Vector<String> friendsRequests = new Vector<>();
     private static ExecutorService executorService = Executors.newCachedThreadPool();
     private static final ReentrantLock lock = new ReentrantLock();
 
@@ -41,10 +43,14 @@ public class Client {
     public static ExecutorService getExecutorService() {
         return executorService;
     }
+
     public static Logger getLog() {
         return log;
     }
 
+    /**
+     * this function reads the config parameters from the disk
+     */
     private static void getConfigs(){
         try {configs = new Configs();} catch (IOException | ParseException e) {
             e.printStackTrace();
@@ -54,7 +60,9 @@ public class Client {
         log.info("config correctly read");
     }
 
-
+    /**
+     * this function creates the directories
+     */
     private static void setUp(){
         Path dir = FileSystems.getDefault().getPath(directory);
         try {
@@ -68,6 +76,9 @@ public class Client {
         log.info("directory correctly created");
     }
 
+    /**
+     * this function close the client cleaning all the data structures
+     */
     public static void close(){
         if (tcp != null) tcp.close();
         if (handler!=null) handler.close();
@@ -81,6 +92,11 @@ public class Client {
         System.exit(0);
     }
 
+    /**
+     * this function sets and sends the command to the server
+     * @param code command code
+     * @return server response
+     */
     private static Response sendCommand(Commands code){
         return tcp.sendCommandAndGetResponse(new Command(code,name,password)
                 .setContent(content)
@@ -89,6 +105,7 @@ public class Client {
                 .setAddress(address)
                 .setPort(port));
     }
+
     public static void logout(){
         lock.lock();
         sendCommand(Logout);
@@ -204,7 +221,7 @@ public class Client {
         }
         setUp();
         getConfigs();
-        tcp = new TCPResponder(configs, friendsRequests);
+        tcp = new TCPResponder(configs);
         address = tcp.getAddress();
         port = tcp.getPort();
         handler = new CallbackHandler((int) configs.CallbackPort);
