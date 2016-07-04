@@ -8,12 +8,10 @@ import java.util.logging.Handler;
 import java.util.logging.LogRecord;
 
 /**
- * Created by marko on 24/05/2016.
+ * this class create and set a formatter in order to have nice logs
  */
 public class MyFormatter extends Formatter {
-    //
     // Create a DateFormat to format the logger timestamp.
-    //
     private static final DateFormat df = new SimpleDateFormat("dd/MM/yyyy hh:mm:ss.SSS");
 
     public String format(LogRecord record) {

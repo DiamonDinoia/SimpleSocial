@@ -5,7 +5,7 @@ import java.io.Serializable;
 import static marco.rcl.shared.Errors.noErrors;
 
 /**
- * Created by Marco on 31/05/16.
+ * This class contains all the possible server's responses
  */
 public class Response implements Serializable {
 

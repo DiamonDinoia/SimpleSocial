@@ -6,10 +6,10 @@ import java.util.logging.FileHandler;
 import java.util.logging.Logger;
 
 /**
- * Created by marko on 24/05/2016.
+ * Class used to get Logger
  */
 public class LoggerFactory {
-
+    // udeb the factory design pattern here
     public static Logger getLogger(String name, String fileName) throws IOException {
         Logger log = Logger.getLogger(name);
         log.setUseParentHandlers(false);

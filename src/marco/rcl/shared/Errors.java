@@ -9,6 +9,11 @@ public enum Errors {
     TokenNotValid, UserNotLogged, AddressNotValid, RequestNotValid, ConfirmNotValid, IgnoreNotValid, UserNotValid,
     UserOffline, ContentNotValid;
 
+    /**
+     * Function used to get a description of the error
+     * @param error error occurred
+     * @return String containing a description of the error
+     */
     public static String getError (Errors error){
         switch (error){
             case noErrors:
