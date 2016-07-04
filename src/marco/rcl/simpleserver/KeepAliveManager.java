@@ -11,7 +11,6 @@ import java.util.logging.Logger;
 
 /**
  * This class is used to handle keep-alive transmissions
- * Created by marko on 03/06/2016.
  */
 public class KeepAliveManager {
 
@@ -75,7 +74,9 @@ public class KeepAliveManager {
         log.info("keep alive closed connections");
     }
 
-
+    /**
+     * this functions decodes the keep-alive packet and updates the onlineUser list
+     */
     private void decodingTask() {
         try {
             while (computing) {
@@ -101,8 +102,7 @@ public class KeepAliveManager {
     }
 
     /**
-     * function called in order to receive datagram packet, checks if the response is arrived in time and then
-     * updates the list
+     * function called in order to receive and send to the decoder the datagram packet
      */
     private void receivingTask() {
         DatagramPacket dp = new DatagramPacket(new byte[96], 96);
@@ -133,9 +133,10 @@ public class KeepAliveManager {
 
 
     /**
+     * TODO: uses int to set user status in order to not use the online user list
      * this function tells to start computing keep-alive request on the multicast
      * Because I expect that the online users a large number. I try to create a good number of receivers threads.
-     * Because UDP ha finite buffer and if it is full datagram gets lost.
+     * Because UDP ha finite buffer and if it is full datagrams gets lost.
      */
     public void startUpdatingStatus() {
         // if already started do nothing

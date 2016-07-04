@@ -58,8 +58,7 @@ public class CallbackManager extends RemoteObject implements ServerCallbackManag
     }
 
     /**
-     * util function creates and allocates an arrayList
-     *
+     * util function that creates and allocates an arrayList
      * @param s string to add
      * @return a new arrayList containing the string s
      */
@@ -71,8 +70,7 @@ public class CallbackManager extends RemoteObject implements ServerCallbackManag
 
 
     /**
-     * this function send the contents to the followers by theru callbacks
-     *
+     * this function send the contents to the followers by their callbacks
      * @param user    the publisher
      * @param content content published
      */
@@ -107,6 +105,15 @@ public class CallbackManager extends RemoteObject implements ServerCallbackManag
         }
     }
 
+    /**
+     * this function allows user to register their callbacks
+     *
+     * @param c        user callback
+     * @param name     user name
+     * @param password user password
+     * @param token    user token, to validate the connection
+     * @return Error or confirm message
+     */
     @Override
     public Errors register(ClientCallback c, String name, String password, Token token) throws RemoteException {
         // check if the user is valid and set his callback
@@ -131,7 +138,15 @@ public class CallbackManager extends RemoteObject implements ServerCallbackManag
         return check;
     }
 
-
+    /**
+     * this function is used by the user to follow one of their friend
+     *
+     * @param friendName friend name
+     * @param name       user name
+     * @param password   user password
+     * @param token      token to validate the connection
+     * @return Error or confirm message
+     */
     @Override
     public Errors follow(String friendName, String name, String password, Token token) throws RemoteException {
         // if the user is valid

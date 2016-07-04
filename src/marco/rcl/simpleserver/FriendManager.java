@@ -29,7 +29,7 @@ public class FriendManager {
     private ExecutorService ex = Server.getExecutorService();
 
     /**
-     * constrictor, initializes data structure and restore the status from the disk
+     * constructor, initializes data structure and restore the status from the disk
      *
      * @param param structure of configuration parameters
      */
@@ -144,7 +144,8 @@ public class FriendManager {
     }
 
     /**
-     * this function deletes all the expired requests, checks all timestamps and if there's someone expired then deletes
+     * this function deletes all the expired requests, it checks all timestamps and if there's someone expired then
+     * deletes
      */
     public void removeExpiredRequests() {
         pendingRequests.values().removeIf(
@@ -211,7 +212,7 @@ public class FriendManager {
     }
 
     /**
-     * this function tells to the friendManager to start backing-up the friendlist
+     * this function tells to the friendManager to start backing-up the friendList
      */
     public void startDumpingFriendships() {
         if (dumping) return;

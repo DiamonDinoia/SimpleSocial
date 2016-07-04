@@ -20,7 +20,6 @@ import static marco.rcl.shared.Errors.*;
 
 /**
  * This class is used to manage users
- * Created by Marco on 29/05/16.
  */
 class UserManager {
     private static final Logger log = Server.getLog();
@@ -59,7 +58,6 @@ class UserManager {
      *
      * @param callbackManager the Callback Manager
      */
-
     public UserManager setCallbackManager(CallbackManager callbackManager) {
         this.callbackManager = callbackManager;
         return this;
@@ -72,7 +70,6 @@ class UserManager {
     /**
      * function used to perform asynchronous updates to de disk, is synchronized because can be called by more threads
      * at once.
-     * TODO: use a dispatch list in order to write more object at the time
      *
      * @param u the new user to be saved on the disk
      */
@@ -256,10 +253,7 @@ class UserManager {
             return new Response(friendManager.addFriendRequest(receiver, sender));
         } catch (Exception e) {
             e.printStackTrace();
-            if (writer != null) try {
-                writer.close();
-            } catch (IOException ignored) {
-            }
+            if (writer != null) try {writer.close();} catch (IOException ignored) {}
             log.severe("failed the connection to the user " + receiver + " " + e.toString());
             return new Response(UserOffline);
         }

@@ -8,7 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
 /**
- * this is a class of static methods that simply save and restore the server's status on the disk
+ * this is a class of static methods that simply saves and restores the server's status on the disk
  */
 public class DiskManager {
 
@@ -122,13 +122,10 @@ public class DiskManager {
      * @return null if something went wrong the hashMap if everything OK
      */
     public static ConcurrentHashMap<String, ArrayList<String>> RestoreFromDisk(String fileName) {
-        FileInputStream fi = null;
-        ObjectInputStream in = null;
         ConcurrentHashMap<String, ArrayList<String>> friends = null;
         log.info("start restoring friend lists");
-        try {
-            fi = new FileInputStream(fileName);
-            in = new ObjectInputStream(fi);
+        try (FileInputStream fi = new FileInputStream(fileName);
+            ObjectInputStream in = new ObjectInputStream(fi)) {
             Object check = in.readObject();
             friends = (ConcurrentHashMap<String, ArrayList<String>>) check;
             log.info("friend list correctly restored");
@@ -156,14 +153,6 @@ public class DiskManager {
         } catch (ClassCastException e) {
             log.severe("friend file damaged or invalid " + e.toString());
             e.printStackTrace();
-        } finally {
-            try {
-                // cleaning up and exiting
-                if (fi != null) fi.close();
-                if (in != null) in.close();
-            } catch (IOException ignored) {
-                ignored.getLocalizedMessage();
-            }
         }
         log.info("restore complete");
         return friends;
