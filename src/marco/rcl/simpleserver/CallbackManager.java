@@ -1,4 +1,4 @@
-package marco.rcl.simpleServer;
+package marco.rcl.simpleserver;
 
 import marco.rcl.shared.*;
 

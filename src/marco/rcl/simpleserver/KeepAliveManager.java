@@ -1,14 +1,11 @@
-package marco.rcl.simpleServer;
+package marco.rcl.simpleserver;
 
 import marco.rcl.shared.Configs;
 import marco.rcl.shared.KeepAlive;
 
 import java.io.IOException;
 import java.net.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.logging.Logger;
 
 
@@ -25,7 +22,7 @@ public class KeepAliveManager {
     private boolean computing = false;
     private DatagramSocket server;
     private ConcurrentSkipListSet<String> onlineUsers;
-
+    private LinkedBlockingQueue<byte[]> queue;
     private boolean[] flags = new boolean[512];
 
     /**
@@ -55,6 +52,7 @@ public class KeepAliveManager {
         }
         log.info("KeepAliveManager correctly started");
         onlineUsers = new ConcurrentSkipListSet<>();
+        queue = new LinkedBlockingQueue<>();
     }
 
     /**
@@ -77,6 +75,31 @@ public class KeepAliveManager {
         log.info("keep alive closed connections");
     }
 
+
+    private void decodingTask(){
+           try {
+               while (computing) {
+                   byte[] tmp =  queue.take();
+                   String[] message = KeepAlive.decodeMessage(tmp);
+                   // if the user is valid
+                   User user = users.get(message[0]);
+                   if (user==null)continue;
+                   if (!user.getPassword().equals(message[1]))continue;
+                   // if the response arrived in time, the user is registered and is online then accept else skip the
+                   // response
+                   if ((System.currentTimeMillis() - new Long(message[2])) <= TimeUnit.SECONDS.toMillis(10)){
+                       onlineUsers.add(message[0]);
+                       log.info("user: " + message[0] + " online");
+                   } else {
+                       log.info("user: " + message[0] + " offline");
+
+                   }
+               }
+           } catch (InterruptedException e) {
+               log.info("keepAliveMessenger interrupted " + e.toString());
+           }
+    }
+
     /**
      * function called in order to receive datagram packet, checks if the response is arrived in time and then
      * updates the list
@@ -86,17 +109,7 @@ public class KeepAliveManager {
             try {
                 while (computing){
                     server.receive(dp);
-                    String[] message = KeepAlive.decodeMessage(dp.getData());
-                    //TODO: check if the user is valid ad use another thread to do it
-                    // if the response arrived in time, the user is registered and is online then accept else skip the
-                    // response
-                    if ((System.currentTimeMillis() - new Long(message[2])) <= TimeUnit.SECONDS.toMillis(10)){
-                        onlineUsers.add(message[0]);
-                        log.info("user: " + message[0] + " online");
-                    } else {
-                        log.info("user: " + message[0] + " offline");
-
-                    }
+                    queue.put(dp.getData());
                 }
             } catch (IOException e) {
                 if (computing) {
@@ -104,7 +117,9 @@ public class KeepAliveManager {
                     log.severe("Problems receiving Keep-alive responses " + e.toString());
                     throw new RuntimeException(e);
                 }
-        }
+            } catch (InterruptedException e) {
+                log.info("keepAliveManager interrupted");
+            }
     }
 
     /**
@@ -132,6 +147,7 @@ public class KeepAliveManager {
                 int cores = Runtime.getRuntime().availableProcessors();
                 log.info("starting " + Integer.toString(cores) + " UDP receivers tasks" );
                 for (int i=0; i < cores; i++) ex.submit(this::receivingTask);
+                for (int i=0; i < (cores+1)/2; i++) ex.submit(this::decodingTask);
                 while (computing){
                     Thread.sleep(TimeUnit.SECONDS.toMillis(10));
                     // check if the receiving threads are enough

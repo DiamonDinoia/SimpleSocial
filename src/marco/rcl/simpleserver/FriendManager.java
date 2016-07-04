@@ -1,4 +1,4 @@
-package marco.rcl.simpleServer;
+package marco.rcl.simpleserver;
 
 
 import marco.rcl.shared.Configs;
@@ -188,7 +188,7 @@ public class FriendManager {
                     log.info("expired requests removed");
                 }
             } catch (InterruptedException e) {
-                log.severe("FriendManager interrupted" + e.toString());
+                log.info("FriendManager interrupted" + e.toString());
             }
         });
     }

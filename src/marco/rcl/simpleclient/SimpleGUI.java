@@ -1,4 +1,4 @@
-package marco.rcl.simpleClient;
+package marco.rcl.simpleclient;
 
 
 import marco.rcl.shared.Errors;
@@ -14,7 +14,7 @@ import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 
 import static marco.rcl.shared.Errors.*;
-import static marco.rcl.simpleClient.SimpleGUI.buttonNames.*;
+import static marco.rcl.simpleclient.SimpleGUI.buttonNames.*;
 
 /**
  * Created by marko on 21/06/2016.

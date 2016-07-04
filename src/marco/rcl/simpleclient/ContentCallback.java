@@ -1,4 +1,4 @@
-package marco.rcl.simpleClient;
+package marco.rcl.simpleclient;
 
 import marco.rcl.shared.ClientCallback;
 
