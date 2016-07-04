@@ -16,7 +16,8 @@ public class Response implements Serializable {
     private String[] userList = null;
     private UserShared[] friendList = null;
 
-    public Response(){}
+    public Response() {
+    }
 
     public Response(Errors error) {
         this.error = error;
@@ -26,11 +27,11 @@ public class Response implements Serializable {
         this.token = token;
     }
 
-    public Response(String[] userList){
+    public Response(String[] userList) {
         this.userList = userList;
     }
 
-    public Response(UserShared[] friendList){
+    public Response(UserShared[] friendList) {
         this.friendList = friendList;
     }
 
@@ -42,7 +43,9 @@ public class Response implements Serializable {
         return token;
     }
 
-    public String[] getUserList(){return userList;}
+    public String[] getUserList() {
+        return userList;
+    }
 
     public UserShared[] getFriendList() {
         return friendList;

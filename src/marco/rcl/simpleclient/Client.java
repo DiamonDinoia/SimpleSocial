@@ -8,7 +8,6 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -51,8 +50,10 @@ public class Client {
     /**
      * this function reads the config parameters from the disk
      */
-    private static void getConfigs(){
-        try {configs = new Configs();} catch (IOException | ParseException e) {
+    private static void getConfigs() {
+        try {
+            configs = new Configs();
+        } catch (IOException | ParseException e) {
             e.printStackTrace();
             log.severe("Failed getting configs parameters from file " + e.toString());
             System.exit(1);
@@ -63,12 +64,12 @@ public class Client {
     /**
      * this function creates the directories
      */
-    private static void setUp(){
+    private static void setUp() {
         Path dir = FileSystems.getDefault().getPath(directory);
         try {
-            Files.createDirectory(dir);}
-        catch (FileAlreadyExistsException ignored) {}
-        catch (IOException e) {
+            Files.createDirectory(dir);
+        } catch (FileAlreadyExistsException ignored) {
+        } catch (IOException e) {
             log.severe("failed creation of the directory " + e.toString());
             e.printStackTrace();
             System.exit(2);
@@ -79,10 +80,10 @@ public class Client {
     /**
      * this function close the client cleaning all the data structures
      */
-    public static void close(){
+    public static void close() {
         if (tcp != null) tcp.close();
-        if (handler!=null) handler.close();
-        if (responder!=null) responder.close();
+        if (handler != null) handler.close();
+        if (responder != null) responder.close();
         executorService.shutdown();
         try {
             executorService.awaitTermination(5, TimeUnit.SECONDS);
@@ -94,11 +95,12 @@ public class Client {
 
     /**
      * this function sets and sends the command to the server
+     *
      * @param code command code
      * @return server response
      */
-    private static Response sendCommand(Commands code){
-        return tcp.sendCommandAndGetResponse(new Command(code,name,password)
+    private static Response sendCommand(Commands code) {
+        return tcp.sendCommandAndGetResponse(new Command(code, name, password)
                 .setContent(content)
                 .setUser(user)
                 .setToken(token)
@@ -106,7 +108,7 @@ public class Client {
                 .setPort(port));
     }
 
-    public static void logout(){
+    public static void logout() {
         lock.lock();
         sendCommand(Logout);
         Client.name = null;
@@ -119,70 +121,70 @@ public class Client {
         lock.unlock();
     }
 
-    public static Errors login(String name, String password){
+    public static Errors login(String name, String password) {
         lock.lock();
         Client.name = name;
         Client.password = password;
         Response response = sendCommand(Login);
         log.info("login command sent");
         token = response.getToken();
-        if (response.getError()==noErrors){
-            handler.register(name,password,token);
-            responder.startResponding(name,password);
+        if (response.getError() == noErrors) {
+            handler.register(name, password, token);
+            responder.startResponding(name, password);
         }
         lock.unlock();
         return response.getError();
     }
 
-    public static Errors register(String name, String password){
+    public static Errors register(String name, String password) {
         lock.lock();
         Client.name = name;
         Client.password = password;
         Response response = sendCommand(Register);
         log.info("register command sent");
         token = response.getToken();
-        if (response.getError()==noErrors){
-            handler.register(name,password,token);
-            responder.startResponding(name,password);
+        if (response.getError() == noErrors) {
+            handler.register(name, password, token);
+            responder.startResponding(name, password);
         }
-        Client.login(name,password);
+        Client.login(name, password);
         lock.unlock();
         return response.getError();
     }
 
-    public static Response searchUser(String user){
+    public static Response searchUser(String user) {
         lock.lock();
         Client.user = user;
         Response response = sendCommand(SearchUser);
-        Client.user=null;
+        Client.user = null;
         lock.unlock();
         return response;
     }
 
-    public static Errors addFriend(String user){
+    public static Errors addFriend(String user) {
         lock.lock();
         Client.user = user;
         Response response = sendCommand(FriendRequest);
-        Client.user= null;
+        Client.user = null;
         lock.unlock();
         return response.getError();
     }
 
-    public static Response friendList(){
+    public static Response friendList() {
         lock.lock();
         Response response = sendCommand(FriendList);
         lock.unlock();
         return response;
     }
 
-    public static Errors followFriend(String user){
+    public static Errors followFriend(String user) {
         lock.lock();
-        Errors error =  handler.follow(user,name,password,token);
+        Errors error = handler.follow(user, name, password, token);
         lock.unlock();
         return error;
     }
 
-    public static Errors publish(String content){
+    public static Errors publish(String content) {
         lock.lock();
         Client.content = content;
         Response response = sendCommand(Publish);
@@ -198,14 +200,15 @@ public class Client {
         return response;
     }
 
-    public static void confirmRequest(String user){
+    public static void confirmRequest(String user) {
         lock.lock();
         Client.user = user;
         sendCommand(FriendConfirm);
         Client.user = null;
         lock.unlock();
     }
-    public static void ignoreRequest(String user){
+
+    public static void ignoreRequest(String user) {
         lock.lock();
         Client.user = user;
         sendCommand(FriendIgnore);
@@ -214,7 +217,8 @@ public class Client {
     }
 
     public static void main(String[] args) {
-        try {log =  LoggerFactory.getLogger("clientLogger","client");
+        try {
+            log = LoggerFactory.getLogger("clientLogger", "client");
         } catch (IOException e) {
             System.err.println("failed creation of logfile");
             System.exit(-1);
@@ -226,7 +230,7 @@ public class Client {
         port = tcp.getPort();
         handler = new CallbackHandler((int) configs.CallbackPort);
         responder = new KeepAliveResponder(configs);
-        configs=null;
+        configs = null;
         tcp.startReceiving();
         log.info("client started");
         SimpleGUI.startView();

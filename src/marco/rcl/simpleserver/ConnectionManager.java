@@ -30,7 +30,7 @@ public class ConnectionManager {
     public ConnectionManager(Configs configs, UserManager userManager) {
         try {
             InetAddress address = InetAddress.getByName(configs.ServerAddress);
-            serverSocket = new ServerSocket((int)configs.ServerPort, (int)configs.Backlog ,address);
+            serverSocket = new ServerSocket((int) configs.ServerPort, (int) configs.Backlog, address);
             log.info("created serverSocket");
             this.userManager = userManager;
         } catch (IOException e) {
@@ -56,15 +56,15 @@ public class ConnectionManager {
                     executorService.submit(() -> responder(socket));
                     log.info("client accepted");
                     // if an error occur during accept might be a client problem, so try again
-                }catch (SocketException e) {
-                if (manage) {
+                } catch (SocketException e) {
+                    if (manage) {
+                        log.severe("Failed dispatcher client " + e.toString());
+                        e.printStackTrace();
+                        // if the socked is closed probably the server is shutting down
+                    } else log.info("stopped dispatcher connections, serverSocket closed");
+                } catch (IOException e) {
                     log.severe("Failed dispatcher client " + e.toString());
                     e.printStackTrace();
-                // if the socked is closed probably the server is shutting down
-                } else log.info("stopped dispatcher connections, serverSocket closed");
-                } catch (IOException e) {
-                log.severe("Failed dispatcher client " + e.toString());
-                e.printStackTrace();
                 }
             }
         });
@@ -72,9 +72,10 @@ public class ConnectionManager {
 
     /**
      * this function is used to perform async communications with the users
+     *
      * @param socket the connection with the user
      */
-    private void responder(Socket socket){
+    private void responder(Socket socket) {
         // it is all in one try block because is not important which one fails, the user can always try another time
         Command command = null;
         try (ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
@@ -89,23 +90,28 @@ public class ConnectionManager {
             log.info("user " + command.getName() + " correctly handled");
             // simply logs the error, this is not a fatal one
         } catch (IOException | ClassNotFoundException | NullPointerException e) {
-            log.severe("user " + (command!=null ? command.getName() : "" ) + " not correctly handled " + e.toString() );
+            log.severe("user " + (command != null ? command.getName() : "") + " not correctly handled " + e.toString());
             e.printStackTrace();
             // cleanup and return
-        } finally {try {socket.close();} catch (IOException ignored) {}}
+        } finally {
+            try {
+                socket.close();
+            } catch (IOException ignored) {
+            }
+        }
     }
 
     /**
      * stops the ConnectionManager to manage new clients
      */
-    public void stopManaging(){
+    public void stopManaging() {
         manage = false;
     }
 
     /**
      * close the connection manager
      */
-    public void close(){
+    public void close() {
         try {
             stopManaging();
             serverSocket.close();

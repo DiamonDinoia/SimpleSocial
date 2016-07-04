@@ -14,6 +14,7 @@ public class ContentCallback extends RemoteObject implements ClientCallback {
 
     /**
      * this function adds the content to the contents list
+     *
      * @param content message from the server
      */
     @Override

@@ -5,7 +5,7 @@ import java.io.Serializable;
 /**
  * This class il used by the server to send to che clients information about their friends
  */
-public class UserShared  implements Serializable{
+public class UserShared implements Serializable {
 
     private final static long serialVersionUID = 1L;
 
@@ -27,6 +27,6 @@ public class UserShared  implements Serializable{
 
     @Override
     public String toString() {
-        return "name: " + name + " status: " + (status ? "on-line" : "off-line") ;
+        return "name: " + name + " status: " + (status ? "on-line" : "off-line");
     }
 }

@@ -9,7 +9,7 @@ import java.io.Serializable;
 /**
  * This class is used to represent the user
  */
-public class User implements Serializable{
+public class User implements Serializable {
 
     private final static long serialVersionUID = 1L;
 
@@ -80,6 +80,7 @@ public class User implements Serializable{
         this.online = false;
         return this;
     }
+
     public User setAddress(String address) {
         this.address = address;
         return this;

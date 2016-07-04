@@ -14,44 +14,46 @@ public class DiskManager {
 
     private static Logger log = Server.getLog();
     private static boolean append = false;
+
     /**
      * restores the hashMap from the disk
+     *
      * @param userFilename name and path of the file containing all the registered users
      * @return ConcurrentHashMap if the function correctly restores the users from the file, null if it fails
      */
-    public static ConcurrentHashMap<String,User> restoreFromDisk(String userFilename) {
+    public static ConcurrentHashMap<String, User> restoreFromDisk(String userFilename) {
         ConcurrentHashMap<String, User> registeredUsers = new ConcurrentHashMap<>();
         boolean recover = false;
-        try(// try to read the entire file
-            FileInputStream fi = new FileInputStream(userFilename);
-            ObjectInputStream in = new ObjectInputStream(fi)) {
+        try (// try to read the entire file
+             FileInputStream fi = new FileInputStream(userFilename);
+             ObjectInputStream in = new ObjectInputStream(fi)) {
             User user;
             // this is no the best way to read the entire file, the most correct way is to save on the file some
             // metadata (such as the last saved user or the number of the users) in order to check if the file
             // has been truncated by some error
-            while (true){
+            while (true) {
                 user = (User) in.readObject();
-                registeredUsers.put(user.getName(),user);
+                registeredUsers.put(user.getName(), user);
             }
-        } catch (EOFException e ){
+        } catch (EOFException e) {
             // reached EOF, checking if it is an error
             // at least I check if the file is empty is an error
-            if (registeredUsers.size()>0) log.info("reached EOF finished restoring users");
+            if (registeredUsers.size() > 0) log.info("reached EOF finished restoring users");
             else {
                 log.severe("error from restoring registered users file damaged... try to recovering  " + e.toString());
                 recover = true;
             }
-        // if the file not exists is not an error, it means there are no registered users
-        } catch (FileNotFoundException e){
+            // if the file not exists is not an error, it means there are no registered users
+        } catch (FileNotFoundException e) {
             log.info("Registered users file not exists, no user registered");
-        // this is sure an error
-        } catch (IOException | ClassNotFoundException | ClassCastException e ) {
+            // this is sure an error
+        } catch (IOException | ClassNotFoundException | ClassCastException e) {
             log.severe("error from restoring registered user list from disk " + e.toString());
             e.printStackTrace();
             registeredUsers = null;
             // closing everything before returning
         } finally {
-            if (recover && registeredUsers.size()<=0) {
+            if (recover && registeredUsers.size() <= 0) {
                 try {
                     Files.delete(FileSystems.getDefault().getPath(userFilename));
                     append = false;
@@ -69,11 +71,12 @@ public class DiskManager {
 
     /**
      * this function store user's data on the disk in order to prevent data loss in case of crash or exit
-     * @param u user to store
+     *
+     * @param u            user to store
      * @param userFilename file in which store
      * @return true in case of error false otherwise
      */
-    public static boolean updateUserFile(User u, String userFilename){
+    public static boolean updateUserFile(User u, String userFilename) {
         FileOutputStream fo = null;
         AppendingObjectOutputStream outAppend = null;
         ObjectOutputStream out = null;
@@ -81,17 +84,17 @@ public class DiskManager {
         log.info("updating UserFile");
         // try to update
         try {
-            fo = new FileOutputStream(userFilename,append);
-            if(append){
+            fo = new FileOutputStream(userFilename, append);
+            if (append) {
                 outAppend = new AppendingObjectOutputStream(fo);
                 outAppend.writeObject(u);
             } else {
                 out = new ObjectOutputStream(fo);
                 out.writeObject(u);
-                append=true;
+                append = true;
             }
             log.info("update terminated");
-        // if there is an error, modifies can't be saved, terminate and start a new session
+            // if there is an error, modifies can't be saved, terminate and start a new session
         } catch (FileNotFoundException e) {
             log.severe("userFile not found terminating " + e.toString());
             e.printStackTrace();
@@ -105,27 +108,29 @@ public class DiskManager {
             try {
                 if (fo != null) fo.close();
                 if (outAppend != null) outAppend.close();
-                if (out!=null) out.close();
-            } catch (IOException ignored) {}
+                if (out != null) out.close();
+            } catch (IOException ignored) {
+            }
         }
         return error;
     }
 
     /**
      * Function used to save the friend list on the disk, to prevent data loss
+     *
      * @param fileName file in which store the friend list
      * @return null if something went wrong the hashMap if everything OK
      */
-    public static ConcurrentHashMap<String,ArrayList<String>> RestoreFromDisk(String fileName){
+    public static ConcurrentHashMap<String, ArrayList<String>> RestoreFromDisk(String fileName) {
         FileInputStream fi = null;
         ObjectInputStream in = null;
-        ConcurrentHashMap<String,ArrayList<String>> friends = null;
+        ConcurrentHashMap<String, ArrayList<String>> friends = null;
         log.info("start restoring friend lists");
         try {
             fi = new FileInputStream(fileName);
             in = new ObjectInputStream(fi);
-            Object check  = in.readObject();
-            friends = (ConcurrentHashMap<String,ArrayList<String>>) check;
+            Object check = in.readObject();
+            friends = (ConcurrentHashMap<String, ArrayList<String>>) check;
             log.info("friend list correctly restored");
         } catch (FileNotFoundException e) {
             log.info("Friend file list not exists creating a new one");
@@ -139,7 +144,7 @@ public class DiskManager {
                 e.printStackTrace();
                 friends = null;
             }
-        } catch (EOFException e){
+        } catch (EOFException e) {
             log.info("file already exists");
             friends = new ConcurrentHashMap<>();
         } catch (IOException e) {
@@ -156,7 +161,9 @@ public class DiskManager {
                 // cleaning up and exiting
                 if (fi != null) fi.close();
                 if (in != null) in.close();
-            } catch (IOException ignored) {ignored.getLocalizedMessage();}
+            } catch (IOException ignored) {
+                ignored.getLocalizedMessage();
+            }
         }
         log.info("restore complete");
         return friends;
@@ -164,15 +171,16 @@ public class DiskManager {
 
     /**
      * this function dumps the friend list on the disk
+     *
      * @param friendList friend list to dump
-     * @param fileName file in which dump the friend list
+     * @param fileName   file in which dump the friend list
      * @return true in case of error false otherwise
      */
-    public static boolean saveToDisk(ConcurrentHashMap<String,ArrayList<String>> friendList, String fileName ){
+    public static boolean saveToDisk(ConcurrentHashMap<String, ArrayList<String>> friendList, String fileName) {
         log.info("dump started");
         boolean error = false;
         try (FileOutputStream fo = new FileOutputStream(fileName);
-            ObjectOutputStream out =  new ObjectOutputStream(fo)) {
+             ObjectOutputStream out = new ObjectOutputStream(fo)) {
             out.writeObject(friendList);
             log.info("dump correctly terminated");
         } catch (FileNotFoundException e) {

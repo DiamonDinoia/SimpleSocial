@@ -23,6 +23,7 @@ public class CallbackHandler {
 
     /**
      * the constructor simply get the callbackManager from the server
+     *
      * @param port public port in which is registered the server callback manager
      */
     public CallbackHandler(int port) {
@@ -38,16 +39,17 @@ public class CallbackHandler {
 
     /**
      * This function send the registration command to the server
-     * @param name user name
+     *
+     * @param name     user name
      * @param password user password
-     * @param token user token
+     * @param token    user token
      */
     public void register(String name, String password, Token token) {
         callback = new ContentCallback();
         try {
-            ClientCallback stub = (ClientCallback) UnicastRemoteObject.exportObject(callback,0);
-            Errors error = callbackManager.register(stub,name,password,token);
-            if (error!=Errors.noErrors){
+            ClientCallback stub = (ClientCallback) UnicastRemoteObject.exportObject(callback, 0);
+            Errors error = callbackManager.register(stub, name, password, token);
+            if (error != Errors.noErrors) {
                 log.severe("problem registering callback");
                 throw new RuntimeException("problem registering callback");
             }
@@ -60,13 +62,14 @@ public class CallbackHandler {
 
     /**
      * function used by the client to request to follow another user
-     * @param user user to follow
-     * @param name user name
+     *
+     * @param user     user to follow
+     * @param name     user name
      * @param password user password
-     * @param token user token
+     * @param token    user token
      * @return error or confirm code
      */
-    public Errors follow(String user, String name, String password, Token token){
+    public Errors follow(String user, String name, String password, Token token) {
         try {
             return callbackManager.follow(user, name, password, token);
         } catch (RemoteException e) {
@@ -79,9 +82,9 @@ public class CallbackHandler {
     /**
      * function used to remove the callback
      */
-    public void close(){
+    public void close() {
         try {
-            UnicastRemoteObject.unexportObject(callback,true);
+            UnicastRemoteObject.unexportObject(callback, true);
         } catch (NoSuchObjectException e) {
             log.severe("problem unsporting callback " + e.toString());
         }

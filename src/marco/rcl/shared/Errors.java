@@ -11,11 +11,12 @@ public enum Errors {
 
     /**
      * Function used to get a description of the error
+     *
      * @param error error occurred
      * @return String containing a description of the error
      */
-    public static String getError (Errors error){
-        switch (error){
+    public static String getError(Errors error) {
+        switch (error) {
             case noErrors:
                 return "Command correctly executed";
             case UserAlreadyRegistered:

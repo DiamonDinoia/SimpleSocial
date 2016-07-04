@@ -30,6 +30,7 @@ public class KeepAliveResponder {
 
     /**
      * constructor tries to set everything up and if something goes wrong exits
+     *
      * @param param config param structure
      */
     public KeepAliveResponder(Configs param) {
@@ -57,48 +58,48 @@ public class KeepAliveResponder {
     /**
      * this function initiates the keepAliveResponder to send keepAlive responses
      */
-    public void startResponding(String name, String password){
+    public void startResponding(String name, String password) {
         if (responding) return;
         responding = true;
         log.info("Started responding");
         Random random = new Random();
         ex.submit(() -> {
-           try {
-               while (responding){
-                   multicast.receive(keepAlivePacket);
-                   // if arrived the correct request
-                   String received = new String(keepAlivePacket.getData());
-                   if (! received.equals(keepAliveMessage)) continue;
-                   // encode the response
-                   byte[] message = KeepAlive.encodeMessage(name,password);
-                   response = new DatagramPacket(message,message.length,address,port);
-                   // in order to not flood the server with responses wait a small amount of time
-                   Thread.sleep(random.nextInt(2000));
-                   client.send(response);
-                   log.info("response sent");
-               }
-               // if something goes wrong log and terminate
-           } catch (IOException | InterruptedException e) {
-              if (responding) {
-                  log.severe("something went wrong during response " + e.toString());
-                  e.printStackTrace();
-                  throw new RuntimeException(e);
-              }
-           }
+            try {
+                while (responding) {
+                    multicast.receive(keepAlivePacket);
+                    // if arrived the correct request
+                    String received = new String(keepAlivePacket.getData());
+                    if (!received.equals(keepAliveMessage)) continue;
+                    // encode the response
+                    byte[] message = KeepAlive.encodeMessage(name, password);
+                    response = new DatagramPacket(message, message.length, address, port);
+                    // in order to not flood the server with responses wait a small amount of time
+                    Thread.sleep(random.nextInt(2000));
+                    client.send(response);
+                    log.info("response sent");
+                }
+                // if something goes wrong log and terminate
+            } catch (IOException | InterruptedException e) {
+                if (responding) {
+                    log.severe("something went wrong during response " + e.toString());
+                    e.printStackTrace();
+                    throw new RuntimeException(e);
+                }
+            }
         });
     }
 
     /**
      * this function tells to the keep alive responder to stop
      */
-    public void stopResponding(){
+    public void stopResponding() {
         responding = false;
     }
 
     /**
      * this function closes the data structure and terminates the threads
      */
-    public void close(){
+    public void close() {
         stopResponding();
         multicast.close();
         client.close();

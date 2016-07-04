@@ -8,7 +8,6 @@ import java.rmi.RemoteException;
  */
 public interface ClientCallback extends Remote {
     /**
-     *
      * @param content the content shared by the user that you are following
      * @throws RemoteException
      */

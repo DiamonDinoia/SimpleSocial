@@ -9,12 +9,13 @@ import java.util.concurrent.*;
 import java.util.logging.Logger;
 
 
-/** This class is used to handle keep-alive transmissions
+/**
+ * This class is used to handle keep-alive transmissions
  * Created by marko on 03/06/2016.
  */
 public class KeepAliveManager {
 
-    private ConcurrentHashMap<String,User> users;
+    private ConcurrentHashMap<String, User> users;
     private MulticastSocket multicast;
     private DatagramPacket keepAlivePacket;
     private ExecutorService ex = Server.getExecutorService();
@@ -57,7 +58,7 @@ public class KeepAliveManager {
     /**
      * function used to terminate the process
      */
-    public void stopUpdatingStatus(){
+    public void stopUpdatingStatus() {
         computing = false;
         log.info("keep alive stopped updating status");
         Thread.currentThread().interrupt();
@@ -66,7 +67,7 @@ public class KeepAliveManager {
     /**
      * cleanup everything and exit
      */
-    public void close(){
+    public void close() {
         this.stopUpdatingStatus();
         Thread.currentThread().interrupt();
         this.server.close();
@@ -75,60 +76,60 @@ public class KeepAliveManager {
     }
 
 
-    private void decodingTask(){
-           try {
-               while (computing) {
-                   byte[] tmp =  queue.take();
-                   String[] message = KeepAlive.decodeMessage(tmp);
-                   // if the user is valid
-                   User user = users.get(message[0]);
-                   if (user==null)continue;
-                   if (!user.getPassword().equals(message[1]))continue;
-                   // if the response arrived in time, the user is registered and is online then accept else skip the
-                   // response
-                   if ((System.currentTimeMillis() - new Long(message[2])) <= TimeUnit.SECONDS.toMillis(10)){
-                       onlineUsers.add(message[0]);
-                       log.info("user: " + message[0] + " online");
-                   } else {
-                       log.info("user: " + message[0] + " offline");
+    private void decodingTask() {
+        try {
+            while (computing) {
+                byte[] tmp = queue.take();
+                String[] message = KeepAlive.decodeMessage(tmp);
+                // if the user is valid
+                User user = users.get(message[0]);
+                if (user == null) continue;
+                if (!user.getPassword().equals(message[1])) continue;
+                // if the response arrived in time, the user is registered and is online then accept else skip the
+                // response
+                if ((System.currentTimeMillis() - new Long(message[2])) <= TimeUnit.SECONDS.toMillis(10)) {
+                    onlineUsers.add(message[0]);
+                    log.info("user: " + message[0] + " online");
+                } else {
+                    log.info("user: " + message[0] + " offline");
 
-                   }
-               }
-           } catch (InterruptedException e) {
-               log.info("keepAliveMessenger interrupted " + e.toString());
-           }
+                }
+            }
+        } catch (InterruptedException e) {
+            log.info("keepAliveMessenger interrupted " + e.toString());
+        }
     }
 
     /**
      * function called in order to receive datagram packet, checks if the response is arrived in time and then
      * updates the list
      */
-    private void receivingTask(){
-        DatagramPacket dp = new DatagramPacket(new byte[96],96);
-            try {
-                while (computing){
-                    server.receive(dp);
-                    queue.put(dp.getData());
-                }
-            } catch (IOException e) {
-                if (computing) {
-                    close();
-                    log.severe("Problems receiving Keep-alive responses " + e.toString());
-                    throw new RuntimeException(e);
-                }
-            } catch (InterruptedException e) {
-                log.info("keepAliveManager interrupted");
+    private void receivingTask() {
+        DatagramPacket dp = new DatagramPacket(new byte[96], 96);
+        try {
+            while (computing) {
+                server.receive(dp);
+                queue.put(dp.getData());
             }
+        } catch (IOException e) {
+            if (computing) {
+                close();
+                log.severe("Problems receiving Keep-alive responses " + e.toString());
+                throw new RuntimeException(e);
+            }
+        } catch (InterruptedException e) {
+            log.info("keepAliveManager interrupted");
+        }
     }
 
     /**
      * this function notifies to the keep-alive manager the new user logged or registered
+     *
      * @param user new user added to online check
      */
-    void notify(String user){
+    void notify(String user) {
         onlineUsers.add(user);
     }
-
 
 
     /**
@@ -136,18 +137,18 @@ public class KeepAliveManager {
      * Because I expect that the online users a large number. I try to create a good number of receivers threads.
      * Because UDP ha finite buffer and if it is full datagram gets lost.
      */
-    public void startUpdatingStatus(){
-       // if already started do nothing
+    public void startUpdatingStatus() {
+        // if already started do nothing
         if (computing) return;
         computing = true;
         log.info("started updating status");
         ex.submit(() -> {
             try {
                 int cores = Runtime.getRuntime().availableProcessors();
-                log.info("starting " + Integer.toString(cores) + " UDP receivers tasks" );
-                for (int i=0; i < cores; i++) ex.submit(this::receivingTask);
-                for (int i=0; i < (cores+1)/2; i++) ex.submit(this::decodingTask);
-                while (computing){
+                log.info("starting " + Integer.toString(cores) + " UDP receivers tasks");
+                for (int i = 0; i < cores; i++) ex.submit(this::receivingTask);
+                for (int i = 0; i < (cores + 1) / 2; i++) ex.submit(this::decodingTask);
+                while (computing) {
                     Thread.sleep(TimeUnit.SECONDS.toMillis(10));
                     // check if the receiving threads are enough
                     // send the keep-alive request in multicast
@@ -155,7 +156,7 @@ public class KeepAliveManager {
                     // wait 10 seconds
                     log.info("multicast message sent");
                     Thread.sleep(TimeUnit.SECONDS.toMillis(12));
-                    users.forEach((name,value) -> {
+                    users.forEach((name, value) -> {
                         if (!onlineUsers.contains(name)) value.setOffLine();
                     });
                     onlineUsers.clear();
@@ -163,7 +164,7 @@ public class KeepAliveManager {
             } catch (IOException e) {
                 log.severe("problems in computing KeepAlive messages " + e.toString());
                 close();
-            } catch (InterruptedException e){
+            } catch (InterruptedException e) {
                 log.info("keepAliveManager interrupted");
             }
         });
