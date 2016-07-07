@@ -23,7 +23,7 @@ public class KeepAliveManager {
     private DatagramSocket server;
     private ConcurrentSkipListSet<String> onlineUsers;
     private LinkedBlockingQueue<byte[]> queue;
-
+    private int maxLength;
     /**
      * @param users Registered user list
      * @param param Configuration parameters
@@ -52,6 +52,7 @@ public class KeepAliveManager {
         log.info("KeepAliveManager correctly started");
         onlineUsers = new ConcurrentSkipListSet<>();
         queue = new LinkedBlockingQueue<>();
+        this.maxLength = (int) param.MaxPacketLength;
     }
 
     /**
@@ -105,11 +106,12 @@ public class KeepAliveManager {
      * function called in order to receive and send to the decoder the datagram packet
      */
     private void receivingTask() {
-        DatagramPacket dp = new DatagramPacket(new byte[96], 96);
+        DatagramPacket dp = new DatagramPacket(new byte[maxLength], maxLength);
         try {
             while (computing) {
                 server.receive(dp);
                 queue.put(dp.getData());
+                dp.setLength(maxLength);
             }
         } catch (IOException e) {
             if (computing) {
