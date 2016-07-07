@@ -35,6 +35,7 @@ public class KeepAliveManager {
             InetAddress group = InetAddress.getByName(param.MulticastGroup);
             multicast = new MulticastSocket((int) param.MulticastPort);
             multicast.setReuseAddress(true);
+            multicast.setTimeToLive(0);
             //probably I don't need to join if I only send messages
             //multicast.joinGroup(group);
             keepAlivePacket = new DatagramPacket(param.KeepAliveMessage.getBytes(),
